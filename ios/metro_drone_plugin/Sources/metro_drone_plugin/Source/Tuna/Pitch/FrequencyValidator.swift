@@ -1,4 +1,4 @@
-public struct MFrequencyValidator {
+public struct FrequencyValidator {
     public static var range = 20.0 ... 4190.0
 
     public static let minimumFrequency = range.lowerBound
@@ -10,7 +10,7 @@ public struct MFrequencyValidator {
 
     public static func validate(frequency: Double) throws {
         if !isValid(frequency: frequency) {
-            throw MPitchError.invalidFrequency
+            throw PitchError.invalidFrequency
         }
     }
 

@@ -18,7 +18,7 @@ enum SoundType {
 class DroneTone {
   static final DroneTone _instance = DroneTone._();
 
-  static DroneTone get instance => _instance;
+  factory DroneTone() => _instance;
 
   DroneTone._() {
     listenToUpdates();
@@ -79,7 +79,7 @@ class DroneTone {
   }
 
   void onDataChanged(data) {
-    print("onDataChanged received: $data | type: ${data.runtimeType}");
+    print("onDroneToneDataChanged received: $data | type: ${data.runtimeType}");
 
     if (data is Map) {
       final map = data;

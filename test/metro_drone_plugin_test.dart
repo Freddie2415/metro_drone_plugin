@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:metro_drone_plugin/metronome_plugin.dart';
 import 'package:metro_drone_plugin/metronome_plugin_method_channel.dart';
 import 'package:metro_drone_plugin/metronome_plugin_platform_interface.dart';
+import 'package:metro_drone_plugin/models/metronome.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockMetroDronePluginPlatform

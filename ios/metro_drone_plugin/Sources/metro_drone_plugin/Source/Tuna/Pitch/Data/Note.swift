@@ -1,4 +1,4 @@
-public struct MNote: CustomStringConvertible {
+public struct Note: CustomStringConvertible {
 
     /// The letter of a music note in English Notation
     public enum Letter: String, CaseIterable, CustomStringConvertible {
@@ -31,7 +31,7 @@ public struct MNote: CustomStringConvertible {
     public let frequency: Double
 
     /// The corresponding wave of the note
-    public let wave: MAcousticWave
+    public let wave: AcousticWave
 
     /// A string description of the note including octave (eg A4)
     public var description: String {
@@ -45,21 +45,21 @@ public struct MNote: CustomStringConvertible {
     /// - Throws: An error if the rest of the components cannot be calculated
     public init(index: Int) throws {
         self.index     = index
-        letter         = try MNoteCalculator.letter(forIndex: index)
-        octave         = try MNoteCalculator.octave(forIndex: index)
-        frequency      = try MNoteCalculator.frequency(forIndex: index)
-        wave           = try MAcousticWave(frequency: frequency)
+        letter         = try NoteCalculator.letter(forIndex: index)
+        octave         = try NoteCalculator.octave(forIndex: index)
+        frequency      = try NoteCalculator.frequency(forIndex: index)
+        wave           = try AcousticWave(frequency: frequency)
     }
 
     /// Initialize a Note from a frequency
     /// - Parameter frequency: The frequency of the note
     /// - Throws: An error if the rest of the components cannot be calculated
     public init(frequency: Double) throws {
-        index          = try MNoteCalculator.index(forFrequency: frequency)
-        letter         = try MNoteCalculator.letter(forIndex: index)
-        octave         = try MNoteCalculator.octave(forIndex: index)
-        self.frequency = try MNoteCalculator.frequency(forIndex: index)
-        wave           = try MAcousticWave(frequency: frequency)
+        index          = try NoteCalculator.index(forFrequency: frequency)
+        letter         = try NoteCalculator.letter(forIndex: index)
+        octave         = try NoteCalculator.octave(forIndex: index)
+        self.frequency = try NoteCalculator.frequency(forIndex: index)
+        wave           = try AcousticWave(frequency: frequency)
     }
 
     /// Initialize a Note from a Letter & Octave
@@ -70,9 +70,9 @@ public struct MNote: CustomStringConvertible {
     public init(letter: Letter, octave: Int) throws {
         self.letter    = letter
         self.octave    = octave
-        index          = try MNoteCalculator.index(forLetter: letter, octave: octave)
-        frequency      = try MNoteCalculator.frequency(forIndex: index)
-        wave           = try MAcousticWave(frequency: frequency)
+        index          = try NoteCalculator.index(forLetter: letter, octave: octave)
+        frequency      = try NoteCalculator.frequency(forIndex: index)
+        wave           = try AcousticWave(frequency: frequency)
     }
 
     // MARK: - Neighbor Notes
@@ -80,14 +80,14 @@ public struct MNote: CustomStringConvertible {
     /// One semitone lower
     /// - Throws: An error if the semitone is out of bounds
     /// - Returns: A note that is one semitone lower
-    public func lower() throws -> MNote {
-        try MNote(index: index - 1)
+    public func lower() throws -> Note {
+        try Note(index: index - 1)
     }
 
     /// One semitone higher
     /// - Throws: An error if the semitone is out of bounds
     /// - Returns: A note that is one semitone higher
-    public func higher() throws -> MNote {
-        try MNote(index: index + 1)
+    public func higher() throws -> Note {
+        try Note(index: index + 1)
     }
 }

@@ -1,4 +1,4 @@
-public struct MAcousticWave {
+public struct AcousticWave {
 
     /// The speed of sound in air (m/s)
     public static let speed: Double = 343
@@ -13,12 +13,12 @@ public struct MAcousticWave {
     public let period: Double
 
     /// Up to 16 harmonic pitches
-    public var harmonics: [MPitch] {
-        var pitches = [MPitch]()
+    public var harmonics: [Pitch] {
+        var pitches = [Pitch]()
 
         do {
             for index in 1...16 {
-                try pitches.append(MPitch(frequency: Double(index) * frequency))
+                try pitches.append(Pitch(frequency: Double(index) * frequency))
             }
         } catch {
             debugPrint(error)
@@ -33,29 +33,29 @@ public struct MAcousticWave {
     /// - Parameter frequency: The frequency of the wave
     /// - Throws: An error in case wavelength or period cannot be calculated
     public init(frequency: Double) throws {
-        try MFrequencyValidator.validate(frequency: frequency)
+        try FrequencyValidator.validate(frequency: frequency)
         self.frequency = frequency
-        wavelength     = try MWaveCalculator.wavelength(forFrequency: frequency)
-        period         = try MWaveCalculator.period(forWavelength: wavelength)
+        wavelength     = try WaveCalculator.wavelength(forFrequency: frequency)
+        period         = try WaveCalculator.period(forWavelength: wavelength)
     }
 
     /// Initialize a wave with a wavelength
     /// - Parameter wavelength: The wavelength
     /// - Throws: An error in case frequency or period cannot be calculated
     public init(wavelength: Double) throws {
-        try MWaveCalculator.validate(wavelength: wavelength)
+        try WaveCalculator.validate(wavelength: wavelength)
         self.wavelength = wavelength
-        frequency       = try MWaveCalculator.frequency(forWavelength: wavelength)
-        period          = try MWaveCalculator.period(forWavelength: wavelength)
+        frequency       = try WaveCalculator.frequency(forWavelength: wavelength)
+        period          = try WaveCalculator.period(forWavelength: wavelength)
     }
 
     /// Initialize a wave with a period
     /// - Parameter period: The period of the wave
     /// - Throws: An error in case wavelength or frequency cannot be calculated
     public init(period: Double) throws {
-        try MWaveCalculator.validate(period: period)
+        try WaveCalculator.validate(period: period)
         self.period = period
-        wavelength  = try MWaveCalculator.wavelength(forPeriod: period)
-        frequency   = try MWaveCalculator.frequency(forWavelength: wavelength)
+        wavelength  = try WaveCalculator.wavelength(forPeriod: period)
+        frequency   = try WaveCalculator.frequency(forWavelength: wavelength)
     }
 }

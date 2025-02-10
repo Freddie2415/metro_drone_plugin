@@ -1,4 +1,4 @@
-public enum MPitchError: Error {
+public enum PitchError: Error {
     case invalidFrequency
     case invalidWavelength
     case invalidPeriod

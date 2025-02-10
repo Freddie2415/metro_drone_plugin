@@ -1,13 +1,13 @@
 import Foundation
 
-public struct MNoteCalculator {
+public struct NoteCalculator {
 
     public struct Standard {
         public static var frequency = 440.0
-        public static let octave    = 4
+        public static var octave    = 4
     }
 
-    public static var letters: [MNote.Letter] = [
+    public static var letters: [Note.Letter] = [
         .A,
         .ASharp,
         .B,
@@ -25,8 +25,8 @@ public struct MNoteCalculator {
     // MARK: - Bounds
 
     public static var indexBounds: ClosedRange<Int> {
-        let minimum = try! index(forFrequency: MFrequencyValidator.minimumFrequency)
-        let maximum = try! index(forFrequency: MFrequencyValidator.maximumFrequency)
+        let minimum = try! index(forFrequency: FrequencyValidator.minimumFrequency)
+        let maximum = try! index(forFrequency: FrequencyValidator.maximumFrequency)
 
         return minimum ... maximum
     }
@@ -47,7 +47,7 @@ public struct MNoteCalculator {
 
     public static func validate(index: Int) throws {
         if !isValid(index: index) {
-            throw MPitchError.invalidPitchIndex
+            throw PitchError.invalidPitchIndex
         }
     }
 
@@ -57,7 +57,7 @@ public struct MNoteCalculator {
 
     public static func validate(octave: Int) throws {
         if !isValid(octave: octave) {
-            throw MPitchError.invalidOctave
+            throw PitchError.invalidOctave
         }
     }
 
@@ -72,7 +72,7 @@ public struct MNoteCalculator {
         return pow(2, power) * Standard.frequency
     }
 
-    public static func letter(forIndex index: Int) throws -> MNote.Letter {
+    public static func letter(forIndex index: Int) throws -> Note.Letter {
         try validate(index: index)
 
         let count = letters.count
@@ -85,7 +85,7 @@ public struct MNoteCalculator {
         }
 
         guard (0 ..< letters.count) ~= lettersIndex else {
-            throw MPitchError.invalidPitchIndex
+            throw PitchError.invalidPitchIndex
         }
 
         return letters[lettersIndex]
@@ -106,13 +106,13 @@ public struct MNoteCalculator {
     // MARK: - Pitch Index
 
     public static func index(forFrequency frequency: Double) throws -> Int {
-        try MFrequencyValidator.validate(frequency: frequency)
+        try FrequencyValidator.validate(frequency: frequency)
         let count = Double(letters.count)
 
         return Int(round(count * log2(frequency / Standard.frequency)))
     }
 
-    public static func index(forLetter letter: MNote.Letter, octave: Int) throws -> Int {
+    public static func index(forLetter letter: Note.Letter, octave: Int) throws -> Int {
         try validate(octave: octave)
 
         let count       = letters.count

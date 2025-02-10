@@ -11,15 +11,11 @@ let package = Package(
     products: [
         .library(name: "metro-drone-plugin", targets: ["metro_drone_plugin"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/alladinian/Tuna.git", exact: "0.9.1")
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "metro_drone_plugin",
-            dependencies: [
-                .product(name: "Tuna", package: "Tuna")
-            ],
+            dependencies: [],
             resources: [
                 .process("Resources")
                 // If your plugin requires a privacy manifest, for example if it uses any required

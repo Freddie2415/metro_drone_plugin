@@ -1,8 +1,8 @@
-public struct MWaveCalculator {
+public struct WaveCalculator {
 
     public static var wavelengthBounds: ClosedRange<Double> {
-        let minimum = try! wavelength(forFrequency: MFrequencyValidator.maximumFrequency)
-        let maximum = try! wavelength(forFrequency: MFrequencyValidator.minimumFrequency)
+        let minimum = try! wavelength(forFrequency: FrequencyValidator.maximumFrequency)
+        let maximum = try! wavelength(forFrequency: FrequencyValidator.minimumFrequency)
 
         return minimum ... maximum
     }
@@ -23,7 +23,7 @@ public struct MWaveCalculator {
 
     public static func validate(wavelength: Double) throws {
         if !isValid(wavelength: wavelength) {
-            throw MPitchError.invalidWavelength
+            throw PitchError.invalidWavelength
         }
     }
 
@@ -33,29 +33,29 @@ public struct MWaveCalculator {
 
     public static func validate(period: Double) throws {
         if !isValid(period: period) {
-            throw MPitchError.invalidPeriod
+            throw PitchError.invalidPeriod
         }
     }
 
     // MARK: - Conversions
 
     public static func frequency(forWavelength wavelength: Double) throws -> Double {
-        try MWaveCalculator.validate(wavelength: wavelength)
-        return MAcousticWave.speed / wavelength
+        try WaveCalculator.validate(wavelength: wavelength)
+        return AcousticWave.speed / wavelength
     }
 
     public static func wavelength(forFrequency frequency: Double) throws -> Double {
-        try MFrequencyValidator.validate(frequency: frequency)
-        return MAcousticWave.speed / frequency
+        try FrequencyValidator.validate(frequency: frequency)
+        return AcousticWave.speed / frequency
     }
 
     public static func wavelength(forPeriod period: Double) throws -> Double {
-        try MWaveCalculator.validate(period: period)
-        return period * MAcousticWave.speed
+        try WaveCalculator.validate(period: period)
+        return period * AcousticWave.speed
     }
 
     public static func period(forWavelength wavelength: Double) throws -> Double {
-        try MWaveCalculator.validate(wavelength: wavelength)
-        return wavelength / MAcousticWave.speed
+        try WaveCalculator.validate(wavelength: wavelength)
+        return wavelength / AcousticWave.speed
     }
 }

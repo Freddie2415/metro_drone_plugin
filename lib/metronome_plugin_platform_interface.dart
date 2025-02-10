@@ -1,6 +1,7 @@
-import 'package:metro_drone_plugin/metronome_plugin.dart';
 import 'package:metro_drone_plugin/metronome_plugin_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
+import 'models/metronome.dart';
 
 abstract class MetronomePluginPlatform extends PlatformInterface {
   /// Constructs a MetroDronePluginPlatform.
@@ -48,11 +49,13 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
   }
 
   Future<void> setTimeSignatureNumerator(int value) {
-    throw UnimplementedError('setTimeSignatureNumerator() has not been implemented.');
+    throw UnimplementedError(
+        'setTimeSignatureNumerator() has not been implemented.');
   }
 
   Future<void> setTimeSignatureDenominator(int value) {
-    throw UnimplementedError('setTimeSignatureDenominator() has not been implemented.');
+    throw UnimplementedError(
+        'setTimeSignatureDenominator() has not been implemented.');
   }
 
   Future<void> setNextTickType({required int tickIndex}) {
@@ -60,7 +63,8 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
   }
 
   Future<void> setDroneDurationRation(double value) {
-    throw UnimplementedError('setDroneDurationRation() has not been implemented.');
+    throw UnimplementedError(
+        'setDroneDurationRation() has not been implemented.');
   }
 
   Stream<Map> get updates => throw UnimplementedError();

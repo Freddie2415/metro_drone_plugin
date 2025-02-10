@@ -82,11 +82,11 @@ class Metronome {
 
   static final Metronome _instance = Metronome._();
 
-  static Metronome get instance => _instance;
-
   Metronome._() {
     listenToUpdates();
   }
+
+  factory Metronome() => _instance;
 
   // Геттеры для чтения состояния
   int get bpm => _bpm;
@@ -153,7 +153,7 @@ class Metronome {
 
   /// Обработка входящих данных (обновлений) с платформы.
   void onDataChanged(data) {
-    print("onDataChanged received: $data | type: ${data.runtimeType}");
+    print("onMetronomeDataChanged received: $data | type: ${data.runtimeType}");
 
     if (data is Map) {
       final map = data;

@@ -1,6 +1,5 @@
 import SwiftUI
 import AVFoundation
-import Tuna
 
 class Tuner: ObservableObject, PitchEngineDelegate {
     @Published var currentNote: String = "—"
@@ -9,47 +8,43 @@ class Tuner: ObservableObject, PitchEngineDelegate {
     @Published var frequency: Double = 0.0
     @Published var tuningFrequency: Double = 440.0 {
         didSet {
-            MNoteCalculator.Standard.frequency = tuningFrequency
+            NoteCalculator.Standard.frequency = tuningFrequency
         }
     }
-    
+
+    public var onFieldUpdated: ((String, Any) -> Void)?
+
     private var pitchEngine: PitchEngine?
-    
+
     init() {
         pitchEngine = PitchEngine(delegate: self)
     }
-    
+
     func start() {
         pitchEngine?.start()
     }
-    
+
     func stop() {
         pitchEngine?.stop()
         reset()
     }
-    
+
     func pitchEngine(_ pitchEngine: PitchEngine, didReceive result: Result<Pitch, Error>) {
         switch result {
         case .success(let pitch):
-            do {
-                let mPitch = try MPitch(frequency: pitch.frequency)
-                self.currentNote = mPitch.note.description
-                self.currentOctave = mPitch.note.octave.description
-                self.frequency = mPitch.frequency
-                self.centsOff = mPitch.closestOffset.cents
-            }catch {
-                print("MPitchError: \(error.localizedDescription)")
-                self.currentNote = "-"
-                self.currentOctave = "-"
-                self.frequency = 0
-                self.centsOff = 0
-            }
+            self.currentNote = pitch.note.description
+            self.currentOctave = pitch.note.octave.description
+            self.frequency = pitch.frequency
+            self.centsOff = pitch.closestOffset.cents
+
+            self.onFieldUpdated?("pitch", [
+                "note": self.currentNote,
+                "octave": self.currentOctave,
+                "frequency": self.frequency,
+                "closestOffsetCents": self.centsOff,
+            ])
         case .failure(let error):
             print("Ошибка: \(error.localizedDescription)")
-            self.currentNote = "-"
-            self.currentOctave = "-"
-            self.frequency = 0
-            self.centsOff = 0
         }
     }
     
@@ -58,6 +53,13 @@ class Tuner: ObservableObject, PitchEngineDelegate {
         self.currentOctave = "—"
         self.centsOff = 0.0
         self.frequency = 0.0
+
+       self.onFieldUpdated?("pitch", [
+            "note": self.currentNote,
+            "octave": self.currentOctave,
+            "frequency": self.frequency,
+            "closestOffsetCents": self.centsOff,
+        ])
     }
     
     private func configureAudioSession() {

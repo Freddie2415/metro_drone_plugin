@@ -1,19 +1,19 @@
 /// A structure representing a Pitch
-public struct MPitch {
+public struct Pitch {
 
     /// A tuple holding offset information
-    public typealias Offset = (note: MNote, frequency: Double, percentage: Double, cents: Double)
+    public typealias Offset = (note: Note, frequency: Double, percentage: Double, cents: Double)
 
     /// A structure encapsulating a pair of offsets
     public struct Offsets {
         /// The lower offset
-        public let lower: MPitch.Offset
+        public let lower: Pitch.Offset
 
         /// The higher offset
-        public let higher: MPitch.Offset
+        public let higher: Pitch.Offset
 
         /// The closest offset
-        public var closest: MPitch.Offset {
+        public var closest: Pitch.Offset {
             abs(lower.frequency) < abs(higher.frequency) ? lower : higher
         }
 
@@ -34,13 +34,13 @@ public struct MPitch {
     public let frequency: Double
 
     /// The wave of the pitch
-    public let wave: MAcousticWave
+    public let wave: AcousticWave
 
     /// The offsets of the pitch
     public let offsets: Offsets
 
     /// The closest note to the pitch
-    public var note: MNote {
+    public var note: Note {
         return offsets.closest.note
     }
 
@@ -55,9 +55,9 @@ public struct MPitch {
     /// - Parameter frequency: The frequency of the Pitch
     /// - Throws: An error if the acoustic wave or the offsets cannot be calculated
     public init(frequency: Double) throws {
-        try MFrequencyValidator.validate(frequency: frequency)
+        try FrequencyValidator.validate(frequency: frequency)
         self.frequency = frequency
-        self.wave      = try MAcousticWave(frequency: frequency)
-        self.offsets   = try MPitchCalculator.offsets(forFrequency: frequency)
+        self.wave      = try AcousticWave(frequency: frequency)
+        self.offsets   = try PitchCalculator.offsets(forFrequency: frequency)
     }
 }
