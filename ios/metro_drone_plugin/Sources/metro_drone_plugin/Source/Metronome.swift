@@ -64,7 +64,11 @@ class Metronome: ObservableObject {
             onFieldUpdated?("tickTypes", tickTypes.map { String(describing: $0) })
         }
     }
-    @Published var timeSignatureDenominator: Int = 4
+    @Published var timeSignatureDenominator: Int = 4 {
+        didSet {
+            self.onFieldUpdated?("timeSignatureDenominator", timeSignatureDenominator)
+        }
+    }
     @Published var currentTick: Int = 0
     @Published var tickTypes: [TickType] = Array(repeating: .regular, count: 4)
     @Published var subdivision: Subdivision = Subdivision(
