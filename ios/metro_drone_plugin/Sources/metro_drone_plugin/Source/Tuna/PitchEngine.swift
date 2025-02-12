@@ -46,7 +46,7 @@ public class PitchEngine {
 
     // MARK: - Initialization
 
-    public init(bufferSize: AVAudioFrameCount = 8192, estimationStrategy: EstimationStrategy = .yin, audioUrl: URL? = nil, signalTracker: SignalTracker? = nil, delegate: PitchEngineDelegate? = nil, callback: PitchEngineCallback? = nil) {
+    public init(bufferSize: AVAudioFrameCount = 32768, estimationStrategy: EstimationStrategy = .yin, audioUrl: URL? = nil, signalTracker: SignalTracker? = nil, delegate: PitchEngineDelegate? = nil, callback: PitchEngineCallback? = nil) {
 
         self.bufferSize = bufferSize
         self.estimator  = estimationStrategy.estimator
@@ -57,7 +57,11 @@ public class PitchEngine {
             if let audioUrl = audioUrl {
                 self.signalTracker = OutputSignalTracker(audioUrl: audioUrl, bufferSize: bufferSize)
             } else {
+#if targetEnvironment(simulator)
+                self.signalTracker = SimulatorSignalTracker(frequencies: (400...500).map { Double($0) }, delayMs: 1000)
+#else
                 self.signalTracker = InputSignalTracker(bufferSize: bufferSize)
+#endif
             }
         }
 

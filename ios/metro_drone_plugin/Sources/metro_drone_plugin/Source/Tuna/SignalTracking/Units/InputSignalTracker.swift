@@ -34,7 +34,7 @@ class InputSignalTracker: SignalTracker {
 
     // MARK: - Initialization
 
-    required init(bufferSize: AVAudioFrameCount = 2048, delegate: SignalTrackerDelegate? = nil) {
+    required init(bufferSize: AVAudioFrameCount = 16384, delegate: SignalTrackerDelegate? = nil) {
         self.bufferSize = bufferSize
         self.delegate   = delegate
         setupAudio()
@@ -43,6 +43,12 @@ class InputSignalTracker: SignalTracker {
     // MARK: - Tracking
 
     func start() throws {
+        #if targetEnvironment(simulator)
+        // If running in the Simulator, audio capture is generally not supported
+        print("Cannot start audio capture on the simulator. Returning.")
+        return
+
+        #else
 
         #if os(iOS)
         try session.setCategory(.playAndRecord)
@@ -71,11 +77,13 @@ class InputSignalTracker: SignalTracker {
 
         let format = inputNode.outputFormat(forBus: bus)
 
-        inputNode.installTap(onBus: bus, bufferSize: bufferSize, format: format) { buffer, time in
+        inputNode.installTap(onBus: bus, bufferSize: bufferSize, format: format) { [weak self] buffer, time in
+            guard let self = self else { return }
             guard let averageLevel = self.averageLevel else { return }
 
             let levelThreshold = self.levelThreshold ?? -1000000.0
 
+            print("averageLevel: \(averageLevel) | levelThreshold: \(levelThreshold)")
             DispatchQueue.main.async {
                 if averageLevel > levelThreshold {
                     self.delegate?.signalTracker(self, didReceiveBuffer: buffer, atTime: time)
@@ -91,9 +99,18 @@ class InputSignalTracker: SignalTracker {
         guard captureSession.isRunning == true else {
             throw InputSignalTrackerError.inputNodeMissing
         }
+
+        #endif
     }
 
     func stop() {
+        #if targetEnvironment(simulator)
+
+        print("No audio capture to stop on the simulator.")
+        return
+
+        #else
+
         guard audioEngine != nil else {
             return
         }
@@ -102,22 +119,42 @@ class InputSignalTracker: SignalTracker {
         audioEngine?.reset()
         audioEngine = nil
         captureSession.stopRunning()
+
+        #endif
     }
 
     private func setupAudio() {
-        do {
-            let audioDevice       = AVCaptureDevice.default(for: AVMediaType.audio)
-            let audioCaptureInput = try AVCaptureDeviceInput(device: audioDevice!)
-            let audioOutput       = AVCaptureAudioDataOutput()
+        #if targetEnvironment(simulator)
+        // If running in the Simulator, we can simply log a message or handle it differently
+        print("Running on the Simulator: Audio capture is not supported.")
+        return
+        #else
+        // Attempt to retrieve the default audio capture device
+        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
+            print("Audio device is not available.")
+            return
+        }
 
+        do {
+            // Create an input from the audio device
+            let audioCaptureInput = try AVCaptureDeviceInput(device: audioDevice)
+
+            // Create an audio output
+            let audioOutput = AVCaptureAudioDataOutput()
+
+            // Add the input and output to the capture session
             captureSession.addInput(audioCaptureInput)
             captureSession.addOutput(audioOutput)
 
-            let connection = audioOutput.connections[0]
-            audioChannel   = connection.audioChannels[0]
+            // Retrieve the first available connection and its audio channel
+            if let connection = audioOutput.connections.first {
+                audioChannel = connection.audioChannels.first
+            }
         } catch {
-            debugPrint(error)
+            // Print any errors that occur during device input creation
+            debugPrint("Error setting up audio device input:", error)
         }
+        #endif
     }
 }
 
