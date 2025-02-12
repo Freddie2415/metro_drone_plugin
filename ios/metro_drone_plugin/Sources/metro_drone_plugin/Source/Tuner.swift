@@ -30,13 +30,6 @@ class Tuner: ObservableObject, PitchEngineDelegate {
         reset()
     }
 
-    private func reset() {
-        self.currentNote = "—"
-        self.currentOctave = "—"
-        self.centsOff = 0.0
-        self.frequency = 0.0
-    }
-
     // MARK: - PitchEngineDelegate
     func pitchEngine(_ pitchEngine: PitchEngine, didReceive result: Result<Pitch, Error>) {
         switch result {
@@ -54,12 +47,7 @@ class Tuner: ObservableObject, PitchEngineDelegate {
             ])
         case .failure(let error):
             print("Error: \(error.localizedDescription)")
-            self.onFieldUpdated?("pitch", [
-                "note": "-",
-                "octave": "-",
-                "frequency": 0.0,
-                "closestOffsetCents": 0.0,
-            ])
+            reset()
         }
     }
     
