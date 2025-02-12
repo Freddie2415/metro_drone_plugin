@@ -16,6 +16,11 @@ class MethodChannelTunerPlugin extends TunerPluginPlatform {
   }
 
   @override
+  Future<double?> setTuningStandard(double frequency) {
+    return methodChannel.invokeMethod<double>("setTuningStandard", frequency);
+  }
+
+  @override
   Stream<Map> get updates {
     return eventChannel.receiveBroadcastStream().map((event) => event as Map);
   }

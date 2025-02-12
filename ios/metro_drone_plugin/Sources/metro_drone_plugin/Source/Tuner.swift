@@ -9,6 +9,7 @@ class Tuner: ObservableObject, PitchEngineDelegate {
     @Published var tuningFrequency: Double = 440.0 {
         didSet {
             NoteCalculator.Standard.frequency = tuningFrequency
+            self.onFieldUpdated?("tuningFrequency", tuningFrequency)
         }
     }
 

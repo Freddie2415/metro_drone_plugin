@@ -13,6 +13,9 @@ class Tuner {
   factory Tuner() => _instance;
 
   bool _isActive = false;
+  double _tuningFrequency = 440;
+
+  double get tuningFrequency => _tuningFrequency;
 
   bool get isActive => _isActive;
 
@@ -47,6 +50,17 @@ class Tuner {
     return _isActive;
   }
 
+  Future<double> setTuningStandard(double frequency) async {
+    final double? result =
+        await TunerPluginPlatform.instance.setTuningStandard(frequency);
+
+    if (result != null) {
+      return _tuningFrequency = result;
+    } else {
+      throw Exception("Error setTuningStandard");
+    }
+  }
+
   void _onTunerDataChanged(Map map) {
     try {
       if (map.containsKey("pitch") && map["pitch"] is Map) {
@@ -59,6 +73,12 @@ class Tuner {
               (pitchMap["closestOffsetCents"] as num?)?.toDouble() ?? 0.0,
         );
         _pitchController.add(pitch);
+      }
+
+      if (map.containsKey("tuningFrequency") &&
+          map["tuningFrequency"] is double) {
+        final frequency = map["tuningFrequency"] as double;
+        _tuningFrequency = frequency;
       }
     } catch (e, stackTrace) {
       debugPrint("Ошибка в onDataUpdated: $e\n$stackTrace");

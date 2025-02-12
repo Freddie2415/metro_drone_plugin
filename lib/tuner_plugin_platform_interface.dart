@@ -30,7 +30,7 @@ abstract class TunerPluginPlatform extends PlatformInterface {
     throw UnimplementedError('stop() has not been implemented.');
   }
 
-  Future<void> setTuningStandard(double frequency) {
+  Future<double?> setTuningStandard(double frequency) {
     throw UnimplementedError('setTuningStandard() has not been implemented.');
   }
 
