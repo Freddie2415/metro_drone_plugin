@@ -372,7 +372,13 @@ class Metronome: ObservableObject {
     
     func start() {
         guard !isPlaying else { return }
-        
+
+        do {
+            try audioEngine.start()
+        } catch {
+            print("Ошибка при запуске аудио движка: \(error)")
+        }
+
         isPlaying = true
         tickIndex = 0
         currentTick = 0
