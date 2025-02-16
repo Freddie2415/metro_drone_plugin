@@ -803,13 +803,8 @@ class Metronome: ObservableObject {
         }
     }
     
-    func setTickType(tickIndex: Int, tickType: TickType) {
-        guard tickIndex >= 0 && tickIndex < self.tickTypes.count else {
-            print("Index out of bounds")
-            return
-        }
-        
-        self.tickTypes[tickIndex] = tickType
+    func setTickTypes(tickTypes: [TickType]) {
+        self.tickTypes = tickTypes
         self.onFieldUpdated?("tickTypes", tickTypes.map { String(describing: $0) })
         if self.isPlaying {
             self.prepareBeatsBuffer()

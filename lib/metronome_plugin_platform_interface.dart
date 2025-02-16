@@ -67,5 +67,9 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
         'setDroneDurationRation() has not been implemented.');
   }
 
+  Future<void> setTickTypes(List<TickType> value) {
+    throw UnimplementedError('setTickTypes() has not been implemented.');
+  }
+
   Stream<Map> get updates => throw UnimplementedError();
 }

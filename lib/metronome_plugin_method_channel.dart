@@ -83,6 +83,14 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
   }
 
   @override
+  Future<void> setTickTypes(List<TickType> value) async {
+    return await methodChannel.invokeMethod<void>(
+      'setTickTypes',
+      value.map((t) => t.toString()).toList(),
+    );
+  }
+
+  @override
   Stream<Map> get updates {
     return eventChannel.receiveBroadcastStream().map((event) => event as Map);
   }

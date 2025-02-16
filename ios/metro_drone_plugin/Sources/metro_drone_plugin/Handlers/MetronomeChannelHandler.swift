@@ -37,6 +37,7 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
         self.methodHandlers["setTimeSignatureDenominator"] = self.handleSetTimeSignatureDenominator
         self.methodHandlers["setNextTickType"] = self.handleSetNextTickType
         self.methodHandlers["setDroneDurationRatio"] = self.handleSetDroneDurationRatio
+        self.methodHandlers["setTickTypes"] = self.handleSetTickTypes
     }
 
     private func handleGetPlatformVersion(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -127,4 +128,14 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
             result(FlutterError(code: "INVALID_ARGUMENTS", message: "BPM value missing", details: nil))
         }
     }
+
+    private func handleSetTickTypes(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        if let tickTypeStringArray = call.arguments as? [String] {
+           let tickTypes: [TickType] = tickTypeStringArray.compactMap { TickType(from: $0) }
+           self.metronome.setTickTypes(tickTypes: tickTypes)
+           result("tickTypes set to \(tickTypes)")
+        } else {
+           result(FlutterError(code: "INVALID_ARGUMENTS", message: "BPM value missing", details: nil))
+        }
+   }
 }
