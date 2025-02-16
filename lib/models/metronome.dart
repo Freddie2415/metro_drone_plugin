@@ -143,6 +143,10 @@ class Metronome {
     await MetronomePluginPlatform.instance.setDroneDurationRation(value);
   }
 
+  Future<void> setTickTypes(List<TickType> value) async {
+    await MetronomePluginPlatform.instance.setTickTypes(value);
+  }
+
   /// Подписка на обновления с платформенной части через EventChannel.
   void listenToUpdates() {
     _streamSubscription?.cancel();
