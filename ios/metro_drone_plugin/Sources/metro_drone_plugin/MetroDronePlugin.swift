@@ -14,6 +14,10 @@ public class MetroDronePlugin: NSObject, FlutterPlugin {
         let metronomeStreamHandler = MetronomeStreamHandler(metronome: metroDrone.metronome)
         metronomeEventChannel.setStreamHandler(metronomeStreamHandler)
 
+        let metronomeTickEventChannel = FlutterEventChannel(name: "metro_drone_plugin/metronome/tick", binaryMessenger: registrar.messenger())
+        let metronomeTickStreamHandler = MetronomeTickStreamHandler(metronome: metroDrone.metronome)
+        metronomeTickEventChannel.setStreamHandler(metronomeTickStreamHandler)
+
         let droneToneEventChannel = FlutterEventChannel(name: "metro_drone_plugin/drone_tone/events", binaryMessenger: registrar.messenger())
         let droneToneStreamHandler = DroneToneStreamHandler(droneTone: metroDrone.generatedDroneTone)
         droneToneEventChannel.setStreamHandler(droneToneStreamHandler)

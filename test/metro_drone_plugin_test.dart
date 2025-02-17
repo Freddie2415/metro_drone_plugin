@@ -68,6 +68,16 @@ class MockMetroDronePluginPlatform
     // TODO: implement setDroneDurationRation
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> setTickTypes(List<TickType> value) {
+    // TODO: implement setTickTypes
+    throw UnimplementedError();
+  }
+
+  @override
+  // TODO: implement tickStream
+  Stream<int> get tickStream => throw UnimplementedError();
 }
 
 void main() {

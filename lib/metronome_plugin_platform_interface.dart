@@ -72,4 +72,6 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
   }
 
   Stream<Map> get updates => throw UnimplementedError();
+
+  Stream<int> get tickStream => throw UnimplementedError();
 }

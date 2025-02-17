@@ -223,7 +223,8 @@ class Metronome: ObservableObject {
     private let mainMixerFormat: AVAudioFormat
 
     public var onFieldUpdated: ((String, Any) -> Void)?
-    
+    public var onTickUpdated: ((Int) -> Void)?
+
     init(audioEngine: AVAudioEngine) {
         self.audioEngine = audioEngine
         self.renderer = OfflineRenderer()
@@ -538,6 +539,7 @@ class Metronome: ObservableObject {
                     DispatchQueue.main.async {
                         self.currentTick = callbackTick + 1
                         self.flash.toggle()
+                        self.onTickUpdated?(self.currentTick)
                     }
                 }
             }

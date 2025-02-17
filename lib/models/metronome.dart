@@ -71,14 +71,17 @@ class Metronome {
 
   // Контроллер для трансляции изменений поля _isPlaying
   final _isPlayingController = StreamController<bool>.broadcast();
-
+  final _tickController = StreamController<int>.broadcast();
   final _metronomeController = StreamController<Metronome>.broadcast();
 
   Stream<bool> get isPlayingStream => _isPlayingController.stream;
 
+  Stream<int> get tickStream => _tickController.stream;
+
   Stream<Metronome> get metronomeStream => _metronomeController.stream;
 
-  StreamSubscription? _streamSubscription;
+  StreamSubscription? _updatesStreamSubscription;
+  StreamSubscription? _tickStreamSubscription;
 
   static final Metronome _instance = Metronome._();
 
@@ -149,14 +152,23 @@ class Metronome {
 
   /// Подписка на обновления с платформенной части через EventChannel.
   void listenToUpdates() {
-    _streamSubscription?.cancel();
-    _streamSubscription = null;
-    _streamSubscription =
-        MetronomePluginPlatform.instance.updates.listen(onDataChanged);
+    _updatesStreamSubscription?.cancel();
+    _updatesStreamSubscription = null;
+    _updatesStreamSubscription =
+        MetronomePluginPlatform.instance.updates.listen(_onDataChanged);
+
+    _tickStreamSubscription?.cancel();
+    _tickStreamSubscription = null;
+    _tickStreamSubscription =
+        MetronomePluginPlatform.instance.tickStream.listen(_onTickChanged);
+  }
+
+  void _onTickChanged(int value) {
+    _tickController.add(value);
   }
 
   /// Обработка входящих данных (обновлений) с платформы.
-  void onDataChanged(data) {
+  void _onDataChanged(data) {
     print("onMetronomeDataChanged received: $data | type: ${data.runtimeType}");
 
     if (data is Map) {
@@ -253,8 +265,12 @@ class Metronome {
   /// Метод для корректного завершения работы (например, при уничтожении объекта)
   void dispose() {
     stop();
-    _streamSubscription?.cancel();
+    _updatesStreamSubscription?.cancel();
     _isPlayingController.close();
-    _streamSubscription = null;
+    _updatesStreamSubscription = null;
+
+    _tickStreamSubscription?.cancel();
+    _tickController.close();
+    _tickStreamSubscription = null;
   }
 }

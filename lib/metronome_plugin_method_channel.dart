@@ -9,8 +9,11 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel('metro_drone_plugin/metronome');
-  final eventChannel =
+  final metronomeUpdatesEventChannel =
       const EventChannel("metro_drone_plugin/metronome/events");
+
+  final metronomeTickEventChannel =
+      const EventChannel("metro_drone_plugin/metronome/tick");
 
   @override
   Future<String?> getPlatformVersion() async {
@@ -92,6 +95,15 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
 
   @override
   Stream<Map> get updates {
-    return eventChannel.receiveBroadcastStream().map((event) => event as Map);
+    return metronomeUpdatesEventChannel
+        .receiveBroadcastStream()
+        .map((event) => event as Map);
+  }
+
+  @override
+  Stream<int> get tickStream {
+    return metronomeTickEventChannel
+        .receiveBroadcastStream()
+        .map((event) => event as int);
   }
 }
