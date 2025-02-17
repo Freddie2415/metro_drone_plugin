@@ -2,9 +2,9 @@ import SwiftUI
 import AVFoundation
 
 class Tuner: ObservableObject, PitchEngineDelegate {
-    @Published var currentNote: String = "—"
+    @Published var currentNote: String = ""
     @Published var centsOff: Double = 0.0
-    @Published var currentOctave: String = "—"
+    @Published var currentOctave: String = ""
     @Published var frequency: Double = 0.0
     @Published var tuningFrequency: Double = 440.0 {
         didSet {
@@ -53,8 +53,8 @@ class Tuner: ObservableObject, PitchEngineDelegate {
     }
     
     private func reset() {
-        self.currentNote = "—"
-        self.currentOctave = "—"
+        self.currentNote = ""
+        self.currentOctave = ""
         self.centsOff = 0.0
         self.frequency = 0.0
 
