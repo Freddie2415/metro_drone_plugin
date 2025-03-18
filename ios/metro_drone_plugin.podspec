@@ -14,6 +14,9 @@ A new Flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'metro_drone_plugin/Sources/metro_drone_plugin/**/*'
+  s.resource_bundles = {
+    'metro_drone_plugin' => ['metro_drone_plugin/Sources/metro_drone_plugin/Resources/*']
+  }
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
 

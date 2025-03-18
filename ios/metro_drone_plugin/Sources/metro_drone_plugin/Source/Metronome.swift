@@ -236,16 +236,21 @@ class Metronome: ObservableObject {
             self.bufferSampleRate = mainMixerFormat.sampleRate
 
             #if SWIFT_PACKAGE
-            let tickSoundFileURL = Bundle.module.url(forResource: "tick_sound", withExtension: "wav")!
-            let accentTickSoundFileURL = Bundle.module.url(forResource: "accent_sound", withExtension: "wav")!
-            let strongAccentTickSoundFileURL = Bundle.module.url(forResource: "strong_accent_sound", withExtension: "wav")!
-            let tapSoundFileURL = Bundle.module.url(forResource: "tap_sound", withExtension: "wav")!
+            let resourceBundle = Bundle.module
             #else
-            let tickSoundFileURL = Bundle(for: Self.self).url(forResource: "tick_sound", withExtension: "wav")!
-            let accentTickSoundFileURL = Bundle(for: Self.self).url(forResource: "accent_sound", withExtension: "wav")!
-            let strongAccentTickSoundFileURL = Bundle(for: Self.self).url(forResource: "strong_accent_sound", withExtension: "wav")!
-            let tapSoundFileURL = Bundle(for: Self.self).url(forResource: "tap_sound", withExtension: "wav")!
+            let bundle = Bundle(for: Self.self)
+            guard let resourceBundleURL = bundle.url(forResource: "metro_drone_plugin", withExtension: "bundle"),
+                  let resourceBundle = Bundle(url: resourceBundleURL) else {
+                fatalError("⚠️ Ошибка: не найден ресурсный бандл metro_drone_plugin.bundle")
+            }
             #endif
+
+            guard let tickSoundFileURL = resourceBundle.url(forResource: "tick_sound", withExtension: "wav"),
+                  let accentTickSoundFileURL = resourceBundle.url(forResource: "accent_sound", withExtension: "wav"),
+                  let strongAccentTickSoundFileURL = resourceBundle.url(forResource: "strong_accent_sound", withExtension: "wav"),
+                  let tapSoundFileURL = resourceBundle.url(forResource: "tap_sound", withExtension: "wav") else {
+                fatalError("⚠️ Ошибка: не удалось загрузить один или несколько звуковых файлов")
+            }
             
             self.regularTickBuffer = try createAndResampleBuffer(from: tickSoundFileURL, toFormat: mainMixerFormat)
             self.accentTickBuffer = try createAndResampleBuffer(from: accentTickSoundFileURL, toFormat: mainMixerFormat)
