@@ -36,7 +36,7 @@ class MetroDrone {
             let audioSession = AVAudioSession.sharedInstance()
 
             // Устанавливаем категорию для воспроизведения звука
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.mixWithOthers])
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             print("setCategory")
             // Активируем аудиосессию
             try audioSession.setActive(true)
