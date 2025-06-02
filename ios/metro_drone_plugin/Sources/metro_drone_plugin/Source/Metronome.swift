@@ -70,7 +70,7 @@ class Metronome: ObservableObject {
         }
     }
     @Published var currentTick: Int = 0
-    @Published var tickTypes: [TickType] = Array(repeating: .regular, count: 4)
+    @Published var tickTypes: [TickType] = Array(repeating: .accent, count: 4)
     @Published var subdivision: Subdivision = Subdivision(
         name: "Quarter Notes",
         description: "One quarter note per beat",
