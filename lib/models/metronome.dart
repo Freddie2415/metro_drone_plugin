@@ -32,11 +32,11 @@ class Subdivision {
 
   @override
   int get hashCode => Object.hash(
-        name,
-        description,
-        const ListEquality().hash(restPattern),
-        const ListEquality().hash(durationPattern),
-      );
+    name,
+    description,
+    const ListEquality().hash(restPattern),
+    const ListEquality().hash(durationPattern),
+  );
 
   @override
   String toString() {
@@ -60,8 +60,7 @@ class Metronome {
   int _timeSignatureDenominator = 4;
   int _currentTick = 0;
   double _droneDurationRatio = 0.5;
-  List<TickType> _tickTypes =
-      List.generate(4, (index) => TickType.regular); // по умолчанию 4 элемента
+  List<TickType> _tickTypes = List.generate(4, (index) => TickType.accent);
   Subdivision _subdivision = Subdivision(
     name: "Quarter Notes",
     description: "One quarter note per beat",
@@ -138,8 +137,9 @@ class Metronome {
   }
 
   Future<void> setNextTickType({required int tickIndex}) async {
-    await MetronomePluginPlatform.instance
-        .setNextTickType(tickIndex: tickIndex);
+    await MetronomePluginPlatform.instance.setNextTickType(
+      tickIndex: tickIndex,
+    );
   }
 
   Future<void> setDroneDurationRatio(double value) async {
@@ -154,13 +154,13 @@ class Metronome {
   void listenToUpdates() {
     _updatesStreamSubscription?.cancel();
     _updatesStreamSubscription = null;
-    _updatesStreamSubscription =
-        MetronomePluginPlatform.instance.updates.listen(_onDataChanged);
+    _updatesStreamSubscription = MetronomePluginPlatform.instance.updates
+        .listen(_onDataChanged);
 
     _tickStreamSubscription?.cancel();
     _tickStreamSubscription = null;
-    _tickStreamSubscription =
-        MetronomePluginPlatform.instance.tickStream.listen(_onTickChanged);
+    _tickStreamSubscription = MetronomePluginPlatform.instance.tickStream
+        .listen(_onTickChanged);
   }
 
   void _onTickChanged(int value) {
@@ -204,31 +204,36 @@ class Metronome {
       if (map.containsKey("subdivision") && map["subdivision"] is Map) {
         final subdivisionMap = map["subdivision"] as Map;
         _subdivision = Subdivision(
-          name: subdivisionMap["name"] is String
-              ? subdivisionMap["name"] as String
-              : _subdivision.name,
-          description: subdivisionMap["description"] is String
-              ? subdivisionMap["description"] as String
-              : _subdivision.description,
-          restPattern: subdivisionMap["restPattern"] is List
-              ? (subdivisionMap["restPattern"] as List).cast<bool>()
-              : _subdivision.restPattern,
-          durationPattern: subdivisionMap["durationPattern"] is List
-              ? (subdivisionMap["durationPattern"] as List).cast<double>()
-              : _subdivision.durationPattern,
+          name:
+              subdivisionMap["name"] is String
+                  ? subdivisionMap["name"] as String
+                  : _subdivision.name,
+          description:
+              subdivisionMap["description"] is String
+                  ? subdivisionMap["description"] as String
+                  : _subdivision.description,
+          restPattern:
+              subdivisionMap["restPattern"] is List
+                  ? (subdivisionMap["restPattern"] as List).cast<bool>()
+                  : _subdivision.restPattern,
+          durationPattern:
+              subdivisionMap["durationPattern"] is List
+                  ? (subdivisionMap["durationPattern"] as List).cast<double>()
+                  : _subdivision.durationPattern,
         );
       }
 
       // Обновляем tickTypes
       if (map.containsKey("tickTypes") && map["tickTypes"] is List) {
         final tickTypesData = map["tickTypes"] as List;
-        _tickTypes = tickTypesData.map<TickType>((type) {
-          if (type is String) {
-            return _convertTickType(type);
-          } else {
-            return TickType.regular;
-          }
-        }).toList();
+        _tickTypes =
+            tickTypesData.map<TickType>((type) {
+              if (type is String) {
+                return _convertTickType(type);
+              } else {
+                return TickType.regular;
+              }
+            }).toList();
       }
 
       // Обновляем поле _currentTick
