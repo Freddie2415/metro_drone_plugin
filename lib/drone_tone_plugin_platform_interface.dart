@@ -24,32 +24,32 @@ abstract class DroneTonePluginPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<void> start() {
+  Future<String?> start() {
     throw UnimplementedError('start() has not been implemented.');
   }
 
-  Future<void> stop() {
+  Future<String?> stop() {
     throw UnimplementedError('stop() has not been implemented.');
   }
 
   Stream<Map> get updates => throw UnimplementedError();
 
-  Future<void> setPulsing(bool pulsing) async {
+  Future<String?> setPulsing(bool pulsing) async {
     throw UnimplementedError('setPulsing() has not been implemented.');
   }
 
-  Future<void> setNote({
+  Future<String?> setNote({
     required String note,
     required int octave,
   }) async {
-    throw UnimplementedError('setOctave() has not been implemented.');
+    throw UnimplementedError('setNote() has not been implemented.');
   }
 
-  Future<void> setTuningStandard(double frequency) {
+  Future<String?> setTuningStandard(double frequency) {
     throw UnimplementedError('setTuningStandard() has not been implemented.');
   }
 
-  Future<void> setSoundType(SoundType soundType) {
+  Future<String?> setSoundType(SoundType soundType) {
     throw UnimplementedError('setSoundType() has not been implemented.');
   }
 }

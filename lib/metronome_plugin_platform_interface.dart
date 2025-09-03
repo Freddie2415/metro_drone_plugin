@@ -40,34 +40,34 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
     throw UnimplementedError('tap() has not been implemented.');
   }
 
-  Future<void> setBpm(int bpm) {
+  Future<String?> setBpm(int bpm) {
     throw UnimplementedError('setBpm() has not been implemented.');
   }
 
-  Future<void> setSubdivision(Subdivision subdivision) {
+  Future<String?> setSubdivision(Subdivision subdivision) {
     throw UnimplementedError('setSubdivision() has not been implemented.');
   }
 
-  Future<void> setTimeSignatureNumerator(int value) {
+  Future<String?> setTimeSignatureNumerator(int value) {
     throw UnimplementedError(
         'setTimeSignatureNumerator() has not been implemented.');
   }
 
-  Future<void> setTimeSignatureDenominator(int value) {
+  Future<String?> setTimeSignatureDenominator(int value) {
     throw UnimplementedError(
         'setTimeSignatureDenominator() has not been implemented.');
   }
 
-  Future<void> setNextTickType({required int tickIndex}) {
+  Future<String?> setNextTickType({required int tickIndex}) {
     throw UnimplementedError('setNextTickType() has not been implemented.');
   }
 
-  Future<void> setDroneDurationRation(double value) {
+  Future<String?> setDroneDurationRation(double value) {
     throw UnimplementedError(
         'setDroneDurationRation() has not been implemented.');
   }
 
-  Future<void> setTickTypes(List<TickType> value) {
+  Future<String?> setTickTypes(List<TickType> value) {
     throw UnimplementedError('setTickTypes() has not been implemented.');
   }
 

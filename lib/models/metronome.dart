@@ -116,38 +116,38 @@ class Metronome {
     return MetronomePluginPlatform.instance.stop();
   }
 
-  Future<void> tap() async {
-    await MetronomePluginPlatform.instance.tap();
+  Future<String?> tap() async {
+    return await MetronomePluginPlatform.instance.tap();
   }
 
-  Future<void> setBpm(int value) async {
-    await MetronomePluginPlatform.instance.setBpm(value);
+  Future<String?> setBpm(int value) async {
+    return await MetronomePluginPlatform.instance.setBpm(value);
   }
 
-  Future<void> setSubdivision(Subdivision value) async {
-    await MetronomePluginPlatform.instance.setSubdivision(value);
+  Future<String?> setSubdivision(Subdivision value) async {
+    return await MetronomePluginPlatform.instance.setSubdivision(value);
   }
 
-  Future<void> setTimeSignatureNumerator(int value) async {
-    await MetronomePluginPlatform.instance.setTimeSignatureNumerator(value);
+  Future<String?> setTimeSignatureNumerator(int value) async {
+    return await MetronomePluginPlatform.instance.setTimeSignatureNumerator(value);
   }
 
-  Future<void> setTimeSignatureDenominator(int value) async {
-    await MetronomePluginPlatform.instance.setTimeSignatureDenominator(value);
+  Future<String?> setTimeSignatureDenominator(int value) async {
+    return await MetronomePluginPlatform.instance.setTimeSignatureDenominator(value);
   }
 
-  Future<void> setNextTickType({required int tickIndex}) async {
-    await MetronomePluginPlatform.instance.setNextTickType(
+  Future<String?> setNextTickType({required int tickIndex}) async {
+    return await MetronomePluginPlatform.instance.setNextTickType(
       tickIndex: tickIndex,
     );
   }
 
-  Future<void> setDroneDurationRatio(double value) async {
-    await MetronomePluginPlatform.instance.setDroneDurationRation(value);
+  Future<String?> setDroneDurationRatio(double value) async {
+    return await MetronomePluginPlatform.instance.setDroneDurationRation(value);
   }
 
-  Future<void> setTickTypes(List<TickType> value) async {
-    await MetronomePluginPlatform.instance.setTickTypes(value);
+  Future<String?> setTickTypes(List<TickType> value) async {
+    return await MetronomePluginPlatform.instance.setTickTypes(value);
   }
 
   /// Подписка на обновления с платформенной части через EventChannel.

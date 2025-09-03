@@ -47,31 +47,31 @@ class DroneTone {
 
   double get tuningStandard => _tuningStandard;
 
-  Future<void> start() async {
-    DroneTonePluginPlatform.instance.start();
+  Future<String?> start() async {
+    return await DroneTonePluginPlatform.instance.start();
   }
 
-  Future<void> stop() async {
-    DroneTonePluginPlatform.instance.stop();
+  Future<String?> stop() async {
+    return await DroneTonePluginPlatform.instance.stop();
   }
 
-  Future<void> setPulsing(bool pulsing) async {
-    await DroneTonePluginPlatform.instance.setPulsing(pulsing);
+  Future<String?> setPulsing(bool pulsing) async {
+    return await DroneTonePluginPlatform.instance.setPulsing(pulsing);
   }
 
-  Future<void> setNote({
+  Future<String?> setNote({
     required String note,
     required int octave,
   }) async {
-    await DroneTonePluginPlatform.instance.setNote(note: note, octave: octave);
+    return await DroneTonePluginPlatform.instance.setNote(note: note, octave: octave);
   }
 
-  Future<void> setTuningStandard(double frequency) async {
-    await DroneTonePluginPlatform.instance.setTuningStandard(frequency);
+  Future<String?> setTuningStandard(double frequency) async {
+    return await DroneTonePluginPlatform.instance.setTuningStandard(frequency);
   }
 
-  Future<void> setSoundType(SoundType soundType) async {
-    await DroneTonePluginPlatform.instance.setSoundType(soundType);
+  Future<String?> setSoundType(SoundType soundType) async {
+    return await DroneTonePluginPlatform.instance.setSoundType(soundType);
   }
 
   void listenToUpdates() {

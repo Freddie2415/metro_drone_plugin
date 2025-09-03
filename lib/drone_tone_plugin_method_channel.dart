@@ -11,22 +11,22 @@ class MethodChannelDroneTonePlugin extends DroneTonePluginPlatform {
       const EventChannel('metro_drone_plugin/drone_tone/events');
 
   @override
-  Future<void> start() async {
-    await methodChannel.invokeMethod("start");
+  Future<String?> start() async {
+    return await methodChannel.invokeMethod<String>("start");
   }
 
   @override
-  Future<void> stop() async {
-    await methodChannel.invokeMethod("stop");
+  Future<String?> stop() async {
+    return await methodChannel.invokeMethod<String>("stop");
   }
 
   @override
-  Future<void> setPulsing(bool pulsing) async {
-    await methodChannel.invokeMethod("setPulsing", pulsing);
+  Future<String?> setPulsing(bool pulsing) async {
+    return await methodChannel.invokeMethod<String>("setPulsing", pulsing);
   }
 
   @override
-  Future<void> setNote({
+  Future<String?> setNote({
     required String note,
     required int octave,
   }) async {
@@ -46,7 +46,7 @@ class MethodChannelDroneTonePlugin extends DroneTonePluginPlatform {
       "B",
     ].firstWhere((e) => e == note, orElse: () => "C");
 
-    await methodChannel.invokeMethod(
+    return await methodChannel.invokeMethod<String>(
       "setNote",
       {
         "note": validNote,
@@ -56,13 +56,13 @@ class MethodChannelDroneTonePlugin extends DroneTonePluginPlatform {
   }
 
   @override
-  Future<void> setTuningStandard(double frequency) async {
-    await methodChannel.invokeMethod("setTuningStandard", frequency);
+  Future<String?> setTuningStandard(double frequency) async {
+    return await methodChannel.invokeMethod<String>("setTuningStandard", frequency);
   }
 
   @override
-  Future<void> setSoundType(SoundType soundType) async {
-    await methodChannel.invokeMethod("setSoundType", soundType.toString());
+  Future<String?> setSoundType(SoundType soundType) async {
+    return await methodChannel.invokeMethod<String>("setSoundType", soundType.toString());
   }
 
   @override

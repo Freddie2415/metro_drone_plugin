@@ -38,56 +38,56 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
   }
 
   @override
-  Future<void> setBpm(int bpm) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setBpm(int bpm) async {
+    return await methodChannel.invokeMethod<String>(
       'setBpm',
       bpm,
     );
   }
 
   @override
-  Future<void> setSubdivision(Subdivision subdivision) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setSubdivision(Subdivision subdivision) async {
+    return await methodChannel.invokeMethod<String>(
       'setSubdivision',
       subdivision.toMap(),
     );
   }
 
   @override
-  Future<void> setNextTickType({required int tickIndex}) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setNextTickType({required int tickIndex}) async {
+    return await methodChannel.invokeMethod<String>(
       'setNextTickType',
       tickIndex,
     );
   }
 
   @override
-  Future<void> setTimeSignatureDenominator(int value) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setTimeSignatureDenominator(int value) async {
+    return await methodChannel.invokeMethod<String>(
       'setTimeSignatureDenominator',
       value,
     );
   }
 
   @override
-  Future<void> setTimeSignatureNumerator(int value) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setTimeSignatureNumerator(int value) async {
+    return await methodChannel.invokeMethod<String>(
       'setTimeSignatureNumerator',
       value,
     );
   }
 
   @override
-  Future<void> setDroneDurationRation(double value) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setDroneDurationRation(double value) async {
+    return await methodChannel.invokeMethod<String>(
       'setDroneDurationRatio',
       value,
     );
   }
 
   @override
-  Future<void> setTickTypes(List<TickType> value) async {
-    return await methodChannel.invokeMethod<void>(
+  Future<String?> setTickTypes(List<TickType> value) async {
+    return await methodChannel.invokeMethod<String>(
       'setTickTypes',
       value.map((t) => t.toString()).toList(),
     );

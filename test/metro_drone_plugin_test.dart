@@ -12,7 +12,7 @@ class MockMetroDronePluginPlatform
   Future<String?> getPlatformVersion() => Future.value('42');
 
   @override
-  Future<void> setBpm(int bpm) {
+  Future<String?> setBpm(int bpm) {
     // TODO: implement setBpm
     throw UnimplementedError();
   }
@@ -34,25 +34,25 @@ class MockMetroDronePluginPlatform
   Stream<Map> get updates => throw UnimplementedError();
 
   @override
-  Future<void> setNextTickType({required int tickIndex}) {
+  Future<String?> setNextTickType({required int tickIndex}) {
     // TODO: implement setNextTickType
     throw UnimplementedError();
   }
 
   @override
-  Future<void> setSubdivision(Subdivision subdivision) {
+  Future<String?> setSubdivision(Subdivision subdivision) {
     // TODO: implement setSubdivision
     throw UnimplementedError();
   }
 
   @override
-  Future<void> setTimeSignatureDenominator(int value) {
+  Future<String?> setTimeSignatureDenominator(int value) {
     // TODO: implement setTimeSignatureDenominator
     throw UnimplementedError();
   }
 
   @override
-  Future<void> setTimeSignatureNumerator(int value) {
+  Future<String?> setTimeSignatureNumerator(int value) {
     // TODO: implement setTimeSignatureNumerator
     throw UnimplementedError();
   }
@@ -64,13 +64,13 @@ class MockMetroDronePluginPlatform
   }
 
   @override
-  Future<void> setDroneDurationRation(double value) {
+  Future<String?> setDroneDurationRation(double value) {
     // TODO: implement setDroneDurationRation
     throw UnimplementedError();
   }
 
   @override
-  Future<void> setTickTypes(List<TickType> value) {
+  Future<String?> setTickTypes(List<TickType> value) {
     // TODO: implement setTickTypes
     throw UnimplementedError();
   }
