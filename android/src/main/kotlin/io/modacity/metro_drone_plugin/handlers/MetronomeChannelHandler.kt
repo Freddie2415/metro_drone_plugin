@@ -3,8 +3,38 @@ package io.modacity.metro_drone_plugin.handlers
 import android.os.Build
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import app.metrodrone.domain.metrodrone.Metrodrone
+import app.metrodrone.domain.metrodrone.SoundPlayer
+import app.metrodrone.domain.metronome.Metronome
+import app.metrodrone.domain.drone.Drone
+import app.metrodrone.domain.metronome.soundgen.MetronomeSoundGen
+import app.metrodrone.domain.drone.soundgen.DroneSoundGen
+import app.metrodrone.domain.drone.soundgen.DronePulseGen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import android.content.Context
+import app.metrodrone.domain.clicker.MetronomeClicker
+import app.metrodrone.domain.metronome.models.Subdivision
+import app.metrodrone.domain.metronome.soundgen.MetronomeSoundTreeBuilder
 
-class MetronomeChannelHandler : MethodChannel.MethodCallHandler {
+class MetronomeChannelHandler(private val context: Context) : MethodChannel.MethodCallHandler {
+    
+    private val metrodrone: Metrodrone by lazy {
+        val droneSoundGen = DroneSoundGen()
+        val metronomeSoundTreeBuilder = MetronomeSoundTreeBuilder(context)
+        val metronomeSoundGen = MetronomeSoundGen(metronomeSoundTreeBuilder)
+        val dronePulseGen = DronePulseGen(droneSoundGen)
+        val drone = Drone(droneSoundGen)
+        val metronome = Metronome(metronomeSoundGen, dronePulseGen, drone)
+        val metronomeSoundPlayer = SoundPlayer()
+        val droneSoundPlayer = SoundPlayer()
+        val clicker = MetronomeClicker()
+        
+        Metrodrone(metronome, drone, metronomeSoundPlayer, droneSoundPlayer, clicker)
+    }
+    
+    var tickStreamHandler: MetronomeTickStreamHandler? = null
     
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
@@ -48,13 +78,29 @@ class MetronomeChannelHandler : MethodChannel.MethodCallHandler {
     }
     
     private fun handleStart(call: MethodCall, result: MethodChannel.Result) {
-        // TODO: Implement metronome start functionality
-        result.success("start")
+        try {
+            metrodrone.startMetronome()
+            // Connect beat flow to tick stream handler
+            tickStreamHandler?.let { handler ->
+                CoroutineScope(Dispatchers.Main).launch {
+                    metrodrone.beatFlow.collect { beatIndex ->
+                        handler.sendTick(beatIndex + 1)
+                    }
+                }
+            }
+            result.success("Metronome started")
+        } catch (e: Exception) {
+            result.error("START_ERROR", "Failed to start metronome: ${e.message}", null)
+        }
     }
     
     private fun handleStop(call: MethodCall, result: MethodChannel.Result) {
-        // TODO: Implement metronome stop functionality
-        result.success("stop")
+        try {
+            metrodrone.stopMetronome()
+            result.success("Metronome stopped")
+        } catch (e: Exception) {
+            result.error("STOP_ERROR", "Failed to stop metronome: ${e.message}", null)
+        }
     }
     
     private fun handleTap(call: MethodCall, result: MethodChannel.Result) {

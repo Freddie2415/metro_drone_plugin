@@ -30,13 +30,16 @@ class MetroDronePlugin: FlutterPlugin {
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     // Initialize handlers
-    metronomeChannelHandler = MetronomeChannelHandler()
+    metronomeChannelHandler = MetronomeChannelHandler(flutterPluginBinding.applicationContext)
     droneToneChannelHandler = DroneToneChannelHandler()
     tunerChannelHandler = TunerChannelHandler()
     metronomeStreamHandler = MetronomeStreamHandler()
     metronomeTickStreamHandler = MetronomeTickStreamHandler()
     droneToneStreamHandler = DroneToneStreamHandler()
     tunerStreamHandler = TunerStreamHandler()
+    
+    // Connect metronome channel handler with tick stream handler
+    metronomeChannelHandler.tickStreamHandler = metronomeTickStreamHandler
     
     // Set up method channels
     metronomeChannel = MethodChannel(flutterPluginBinding.binaryMessenger, "metro_drone_plugin/metronome")

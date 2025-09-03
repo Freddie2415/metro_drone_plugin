@@ -1,5 +1,6 @@
 package app.metrodrone.domain.metrodrone
 
+import app.metrodrone.domain.clicker.MetronomeClicker
 import app.metrodrone.domain.drone.Drone
 import app.metrodrone.domain.metronome.Metronome
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,7 @@ class Metrodrone(
     val drone: Drone,
     val metronomeSoundPlayer: SoundPlayer,
     val droneSoundPlayer: SoundPlayer,
+    val clicker: MetronomeClicker,
 ) {
 
     val beatFlow = MutableStateFlow(-1)
