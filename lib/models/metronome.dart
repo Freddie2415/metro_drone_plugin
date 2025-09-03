@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 
 import '../metronome_plugin_platform_interface.dart';
 
@@ -32,11 +33,11 @@ class Subdivision {
 
   @override
   int get hashCode => Object.hash(
-    name,
-    description,
-    const ListEquality().hash(restPattern),
-    const ListEquality().hash(durationPattern),
-  );
+        name,
+        description,
+        const ListEquality().hash(restPattern),
+        const ListEquality().hash(durationPattern),
+      );
 
   @override
   String toString() {
@@ -129,11 +130,13 @@ class Metronome {
   }
 
   Future<String?> setTimeSignatureNumerator(int value) async {
-    return await MetronomePluginPlatform.instance.setTimeSignatureNumerator(value);
+    return await MetronomePluginPlatform.instance
+        .setTimeSignatureNumerator(value);
   }
 
   Future<String?> setTimeSignatureDenominator(int value) async {
-    return await MetronomePluginPlatform.instance.setTimeSignatureDenominator(value);
+    return await MetronomePluginPlatform.instance
+        .setTimeSignatureDenominator(value);
   }
 
   Future<String?> setNextTickType({required int tickIndex}) async {
@@ -154,13 +157,13 @@ class Metronome {
   void listenToUpdates() {
     _updatesStreamSubscription?.cancel();
     _updatesStreamSubscription = null;
-    _updatesStreamSubscription = MetronomePluginPlatform.instance.updates
-        .listen(_onDataChanged);
+    _updatesStreamSubscription =
+        MetronomePluginPlatform.instance.updates.listen(_onDataChanged);
 
     _tickStreamSubscription?.cancel();
     _tickStreamSubscription = null;
-    _tickStreamSubscription = MetronomePluginPlatform.instance.tickStream
-        .listen(_onTickChanged);
+    _tickStreamSubscription =
+        MetronomePluginPlatform.instance.tickStream.listen(_onTickChanged);
   }
 
   void _onTickChanged(int value) {
@@ -169,7 +172,8 @@ class Metronome {
 
   /// Обработка входящих данных (обновлений) с платформы.
   void _onDataChanged(data) {
-    print("onMetronomeDataChanged received: $data | type: ${data.runtimeType}");
+    debugPrint(
+        "onMetronomeDataChanged received: $data | type: ${data.runtimeType}");
 
     if (data is Map) {
       final map = data;
@@ -204,36 +208,31 @@ class Metronome {
       if (map.containsKey("subdivision") && map["subdivision"] is Map) {
         final subdivisionMap = map["subdivision"] as Map;
         _subdivision = Subdivision(
-          name:
-              subdivisionMap["name"] is String
-                  ? subdivisionMap["name"] as String
-                  : _subdivision.name,
-          description:
-              subdivisionMap["description"] is String
-                  ? subdivisionMap["description"] as String
-                  : _subdivision.description,
-          restPattern:
-              subdivisionMap["restPattern"] is List
-                  ? (subdivisionMap["restPattern"] as List).cast<bool>()
-                  : _subdivision.restPattern,
-          durationPattern:
-              subdivisionMap["durationPattern"] is List
-                  ? (subdivisionMap["durationPattern"] as List).cast<double>()
-                  : _subdivision.durationPattern,
+          name: subdivisionMap["name"] is String
+              ? subdivisionMap["name"] as String
+              : _subdivision.name,
+          description: subdivisionMap["description"] is String
+              ? subdivisionMap["description"] as String
+              : _subdivision.description,
+          restPattern: subdivisionMap["restPattern"] is List
+              ? (subdivisionMap["restPattern"] as List).cast<bool>()
+              : _subdivision.restPattern,
+          durationPattern: subdivisionMap["durationPattern"] is List
+              ? (subdivisionMap["durationPattern"] as List).cast<double>()
+              : _subdivision.durationPattern,
         );
       }
 
       // Обновляем tickTypes
       if (map.containsKey("tickTypes") && map["tickTypes"] is List) {
         final tickTypesData = map["tickTypes"] as List;
-        _tickTypes =
-            tickTypesData.map<TickType>((type) {
-              if (type is String) {
-                return _convertTickType(type);
-              } else {
-                return TickType.regular;
-              }
-            }).toList();
+        _tickTypes = tickTypesData.map<TickType>((type) {
+          if (type is String) {
+            return _convertTickType(type);
+          } else {
+            return TickType.regular;
+          }
+        }).toList();
       }
 
       // Обновляем поле _currentTick
@@ -248,7 +247,7 @@ class Metronome {
 
       _metronomeController.add(this);
     } else {
-      print("Received data is not a Map. Ignoring update.");
+      debugPrint("Received data is not a Map. Ignoring update.");
     }
   }
 

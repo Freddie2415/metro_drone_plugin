@@ -11,7 +11,7 @@ class DronePage extends StatefulWidget {
 }
 
 class _DronePageState extends State<DronePage> {
-  final DroneTone _droneTone = DroneTone.instance;
+  final DroneTone _droneTone = DroneTone();
   TextEditingController standardController = TextEditingController(text: "440");
   double droneDurationRatio = 0.5;
   List<String> notes = [
@@ -31,7 +31,7 @@ class _DronePageState extends State<DronePage> {
 
   @override
   void initState() {
-    droneDurationRatio = Metronome.instance.droneDurationRatio;
+    droneDurationRatio = Metronome().droneDurationRatio;
     super.initState();
   }
 
@@ -75,14 +75,14 @@ class _DronePageState extends State<DronePage> {
                   children: [
                     Expanded(
                       child: Text(
-                        "Duration ${Metronome.instance.droneDurationRatio.toStringAsFixed(2)}",
+                        "Duration ${Metronome().droneDurationRatio.toStringAsFixed(2)}",
                       ),
                     ),
                     Expanded(
                       child: Slider(
                         value: droneDurationRatio,
                         onChanged: (value) {
-                          Metronome.instance.setDroneDurationRatio(value);
+                          Metronome().setDroneDurationRatio(value);
                           setState(() {
                             droneDurationRatio = value;
                           });

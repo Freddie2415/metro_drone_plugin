@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:metro_drone_plugin/metronome_plugin.dart';
+import 'package:metro_drone_plugin/models/metronome.dart';
 import 'package:metro_drone_plugin_example/widgets/select_widget.dart';
 
 class MetronomePage extends StatefulWidget {
@@ -10,7 +10,7 @@ class MetronomePage extends StatefulWidget {
 }
 
 class _MetronomePageState extends State<MetronomePage> {
-  final Metronome _metronome = Metronome.instance;
+  final Metronome _metronome = Metronome();
   List<int> beats = List.generate(16, (index) => index + 1);
   List<Subdivision> subdivisions = [
     // 1

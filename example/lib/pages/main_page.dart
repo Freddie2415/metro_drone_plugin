@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:metro_drone_plugin_example/pages/drone_page.dart';
 import 'package:metro_drone_plugin_example/pages/metronome_page.dart';
 import 'package:metro_drone_plugin_example/pages/tuner_page.dart';
+import 'package:metro_drone_plugin_example/pages/plugin_test_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -19,6 +20,7 @@ class _MainPageState extends State<MainPage> {
       0 => "Metronome",
       1 => "Drone",
       2 => "Tuner",
+      3 => "Plugin Tests",
       int() => "???",
     };
   }
@@ -31,8 +33,10 @@ class _MainPageState extends State<MainPage> {
         MetronomePage(),
         DronePage(),
         TunerPage(),
+        PluginTestPage(),
       ][pageIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.metronome),
@@ -45,6 +49,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.tuningfork),
             label: "Tuner",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.gear_alt),
+            label: "Tests",
           ),
         ],
         onTap: (int? index) {

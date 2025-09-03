@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:metro_drone_plugin/drone_tone_plugin_platform_interface.dart';
 
 enum SoundType {
@@ -79,7 +80,7 @@ class DroneTone {
   }
 
   void onDataChanged(data) {
-    print("onDroneToneDataChanged received: $data | type: ${data.runtimeType}");
+    debugPrint("onDroneToneDataChanged received: $data | type: ${data.runtimeType}");
 
     if (data is Map) {
       final map = data;
@@ -130,7 +131,7 @@ class DroneTone {
 
       _droneToneController.add(this);
     } else {
-      print("Received data is not a Map. Ignoring update.");
+      debugPrint("Received data is not a Map. Ignoring update.");
     }
   }
 
