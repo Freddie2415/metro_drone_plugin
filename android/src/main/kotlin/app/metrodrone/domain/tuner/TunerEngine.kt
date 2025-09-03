@@ -5,13 +5,12 @@ import be.hogent.tarsos.dsp.AudioProcessor
 import be.hogent.tarsos.dsp.MicrophoneAudioDispatcher
 import be.hogent.tarsos.dsp.pitch.PitchDetectionResult
 import be.hogent.tarsos.dsp.pitch.PitchProcessor
-import javax.inject.Inject
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-class TunerEngine @Inject constructor() {
+class TunerEngine {
 
     private val sampleRate: Int = 44100
     private val bufferSize: Int = 2048

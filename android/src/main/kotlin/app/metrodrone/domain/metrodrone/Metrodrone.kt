@@ -6,11 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class Metrodrone @Inject constructor(
+class Metrodrone(
     val metronome: Metronome,
     val drone: Drone,
     val metronomeSoundPlayer: SoundPlayer,

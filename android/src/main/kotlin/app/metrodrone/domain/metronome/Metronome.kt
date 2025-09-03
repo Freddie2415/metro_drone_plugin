@@ -13,9 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-class Metronome @Inject constructor(
+class Metronome(
     private val metronomeSoundGen: MetronomeSoundGen,
     private val pulsarSoundGen: DronePulseGen,
     private val drone: Drone,

@@ -5,9 +5,8 @@ import app.metrodrone.domain.drone.models.Note
 import app.metrodrone.domain.drone.models.SoundType
 import app.metrodrone.domain.metronome.models.Beat
 import app.metrodrone.domain.metronome.models.SoundAccent
-import javax.inject.Inject
 
-class DronePulseGen @Inject constructor(
+class DronePulseGen(
     private val droneSoundGen: DroneSoundGen,
 ) {
 

@@ -2,12 +2,11 @@ package app.metrodrone.domain.drone.soundgen
 
 import app.metrodrone.domain.drone.models.Note
 import app.metrodrone.domain.drone.models.SoundType
-import javax.inject.Inject
 import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.sin
 
-class DroneSoundGen @Inject constructor() {
+class DroneSoundGen {
 
     private var sinePhase = 0.0
     private var organPhases = DoubleArray(4)

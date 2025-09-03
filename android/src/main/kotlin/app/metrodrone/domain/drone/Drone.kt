@@ -13,11 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class Drone @Inject constructor(
+class Drone(
     private val droneSoundGen: DroneSoundGen,
 ) {
 

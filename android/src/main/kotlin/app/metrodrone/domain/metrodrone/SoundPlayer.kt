@@ -4,9 +4,8 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
-import javax.inject.Inject
 
-class SoundPlayer @Inject constructor() {
+class SoundPlayer {
 
     private val lock = Any()
 

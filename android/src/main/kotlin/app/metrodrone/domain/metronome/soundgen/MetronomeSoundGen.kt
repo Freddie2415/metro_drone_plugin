@@ -4,9 +4,8 @@ import app.metrodrone.domain.core.FixedSizeMap
 import app.metrodrone.domain.metronome.models.Beat
 import app.metrodrone.domain.metronome.models.BeatPart
 import app.metrodrone.domain.metronome.models.SoundAccent
-import javax.inject.Inject
 
-class MetronomeSoundGen @Inject constructor(
+class MetronomeSoundGen(
     private val builder: MetronomeSoundTreeBuilder,
 ) {
 

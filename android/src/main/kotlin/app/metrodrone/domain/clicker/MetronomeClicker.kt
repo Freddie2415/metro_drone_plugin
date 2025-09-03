@@ -1,8 +1,6 @@
 package app.metrodrone.domain.clicker
 
-import javax.inject.Inject
-
-class MetronomeClicker @Inject constructor() {
+class MetronomeClicker {
 
     private var firstTap: Long? = null
         set(value) {

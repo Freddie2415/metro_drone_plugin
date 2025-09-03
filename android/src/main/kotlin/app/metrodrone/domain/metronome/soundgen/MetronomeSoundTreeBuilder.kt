@@ -5,11 +5,9 @@ import io.modacity.metro_drone_plugin.R
 import app.metrodrone.domain.core.TreeHead
 import app.metrodrone.domain.core.TreeNode
 import app.metrodrone.domain.metronome.models.SoundAccent
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 
-class MetronomeSoundTreeBuilder @Inject constructor(
-    @ApplicationContext private val context: Context
+class MetronomeSoundTreeBuilder(
+    private val context: Context
 ) {
     private val accentSound = createSound(SoundAccent.ACCENT)
     private val strongSound = createSound(SoundAccent.STRONG)
@@ -17,7 +15,7 @@ class MetronomeSoundTreeBuilder @Inject constructor(
     private val muteSound = createSound(SoundAccent.MUTE)
 
     val soundTree = TreeHead<SoundAccent>(
-        nodes = SoundAccent.entries.associate { accent ->
+        nodes = SoundAccent.values().associate { accent ->
             val track = when (accent) {
                 SoundAccent.ACCENT -> accentSound
                 SoundAccent.STRONG -> strongSound
