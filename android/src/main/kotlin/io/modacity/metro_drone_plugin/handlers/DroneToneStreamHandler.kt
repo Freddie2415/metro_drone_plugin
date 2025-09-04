@@ -1,20 +1,23 @@
 package io.modacity.metro_drone_plugin.handlers
 
+import app.metrodrone.domain.drone.Drone
 import io.flutter.plugin.common.EventChannel
 
-class DroneToneStreamHandler : EventChannel.StreamHandler {
+class DroneToneStreamHandler(private val drone: Drone) : EventChannel.StreamHandler {
     private var eventSink: EventChannel.EventSink? = null
     
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         eventSink = events
-        // TODO: Set up drone tone field update listeners
-        // When drone tone properties change, call:
-        // eventSink?.success(mapOf("fieldName" to value))
+        // Set up drone tone field update listeners
+        drone.onFieldUpdate = { field, value ->
+            sendUpdate(field, value)
+        }
     }
     
     override fun onCancel(arguments: Any?) {
         eventSink = null
-        // TODO: Remove listeners
+        // Remove listeners
+        drone.onFieldUpdate = null
     }
     
     // Helper method to send updates to Flutter

@@ -56,7 +56,7 @@ class MetroDronePlugin: FlutterPlugin {
     tunerChannelHandler = TunerChannelHandler()
     metronomeStreamHandler = MetronomeStreamHandler(metronome)
     metronomeTickStreamHandler = MetronomeTickStreamHandler(metronome)
-    droneToneStreamHandler = DroneToneStreamHandler()
+    droneToneStreamHandler = DroneToneStreamHandler(drone)
     tunerStreamHandler = TunerStreamHandler()
     
     // Connect metronome channel handler with tick stream handler
