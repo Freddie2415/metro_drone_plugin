@@ -1,23 +1,33 @@
 package app.metrodrone.domain.metronome
 
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.os.SystemClock
+import android.util.Log
+import app.metrodrone.domain.clicker.MetronomeClicker
 import app.metrodrone.domain.drone.Drone
 import app.metrodrone.domain.drone.soundgen.DronePulseGen
 import app.metrodrone.domain.metronome.models.Beat
 import app.metrodrone.domain.metronome.models.Bpm
+import app.metrodrone.domain.metronome.models.SoundAccent
 import app.metrodrone.domain.metronome.models.Subdivision
 import app.metrodrone.domain.metronome.models.TimeSignature
 import app.metrodrone.domain.metronome.soundgen.MetronomeSoundGen
+import io.modacity.metro_drone_plugin.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 class Metronome(
+    private val context: Context,
     private val metronomeSoundGen: MetronomeSoundGen,
     private val pulsarSoundGen: DronePulseGen,
     private val drone: Drone,
+    private val clicker: MetronomeClicker
 ) {
 
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
@@ -28,31 +38,84 @@ class Metronome(
     private var beats = Beat.defaultList
     private var pulsarMode = false
 
+    var onFieldUpdate: ((String, Any) -> Unit)? = null
+    var onTickUpdated: ((Int) -> Unit)? = null
+
+    private val soundPool: SoundPool
+    private val tapSoundId: Int
+
+    private var isPlaying: Boolean = false
+        set(value) {
+            if (isPlaying != value) {
+                field = value
+                onFieldUpdate?.invoke("isPlaying", value)
+            }
+        }
+
+    init {
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(20)
+            .setAudioAttributes(audioAttributes)
+            .build()
+
+        tapSoundId = soundPool.load(context, R.raw.tap_sound, 1)
+    }
+
     private val beatDurationNanos get() = MINUTE_IN_NANOS / bpm.value
 
     fun updateBpm(value: Int) {
         bpm = Bpm(value)
+        onFieldUpdate?.invoke("bpm", value)
     }
 
     fun updateSubdivision(value: Subdivision) {
         subdivision = value
+//       TODO  onFieldUpdate?.invoke("subdivision", value)
     }
 
     fun updateTactSize(value: Int) {
         timeSignature = timeSignature.copy(tactSize = value)
+        onFieldUpdate?.invoke("timeSignatureNumerator", value)
+        Log.d("timeSignatureNumerator", value.toString());
+        beats = when {
+            value > beats.size -> {
+                val diff = value - beats.size
+                beats + List(diff) {
+                    Beat(
+                        parts = subdivision.parts,
+                        accent = SoundAccent.ACCENT
+                    )
+                }
+            }
+
+            value < beats.size -> {
+                beats.take(value)
+            }
+
+            else -> beats
+        }
+        updateBeats(beats)
     }
 
     fun updateBeatDuration(value: Int) {
         timeSignature = timeSignature.copy(beatDuration = value)
+//     TODO   onFieldUpdate?.invoke("beatDuration", value)
     }
 
     fun updateBeats(value: List<Beat>) {
         beats = value
         timeSignature = timeSignature.copy(tactSize = value.size)
+//      TODO  onFieldUpdate?.invoke("beats", value)
     }
 
     fun updatePulsarMode(value: Boolean) {
         pulsarMode = value
+//    TODO    onFieldUpdate?.invoke("pulsarMode", value)
     }
 
     fun start(
@@ -63,11 +126,25 @@ class Metronome(
     ) {
         stop()
         playingJob = metronomeJob(onBeat)
+        isPlaying = true
     }
 
     fun stop() {
         playingJob?.cancel()
         playingJob = null
+        isPlaying = false
+    }
+
+    fun tap() {
+        soundPool.play(tapSoundId, 1.0f, 1.0f, 0, 0, 1.0f)
+        clicker.addTapAndCalcBpm()?.let { newBpm ->
+            val valueToSet = min(newBpm, Bpm.MAX)
+            updateBpm(valueToSet)
+        }
+    }
+
+    fun cleanup() {
+        soundPool.release()
     }
 
     private fun metronomeJob(
@@ -102,9 +179,9 @@ class Metronome(
                             droneDurationRatio = drone.durationRatio.value.toFloat(),
                         )
 
-                        onBeat(beatIndex, mixAudioArrays(metronomeSamples, droneSamples))
+                        onBeat(beatIndex + 1, mixAudioArrays(metronomeSamples, droneSamples))
                     } else {
-                        onBeat(beatIndex, metronomeSamples)
+                        onBeat(beatIndex + 1, metronomeSamples)
                     }
                 }
 

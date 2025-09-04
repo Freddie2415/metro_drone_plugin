@@ -154,6 +154,12 @@ class _MetronomePageState extends State<MetronomePage> {
                     ),
                   ),
                 ),
+                StreamBuilder(
+                  stream: _metronome.tickStream,
+                  builder: (context, snapshot) {
+                    return Text("INDEX: ${snapshot.data}");
+                  },
+                ),
                 Text(
                   "BPM: ${_metronome.bpm.toInt()}",
                   style: Theme.of(context).textTheme.displaySmall,

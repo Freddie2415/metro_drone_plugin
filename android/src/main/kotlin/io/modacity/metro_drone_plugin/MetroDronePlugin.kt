@@ -1,6 +1,15 @@
 package io.modacity.metro_drone_plugin
 
 import androidx.annotation.NonNull
+import app.metrodrone.domain.clicker.MetronomeClicker
+import app.metrodrone.domain.drone.Drone
+import app.metrodrone.domain.drone.soundgen.DronePulseGen
+import app.metrodrone.domain.drone.soundgen.DroneSoundGen
+import app.metrodrone.domain.metrodrone.Metrodrone
+import app.metrodrone.domain.metrodrone.SoundPlayer
+import app.metrodrone.domain.metronome.Metronome
+import app.metrodrone.domain.metronome.soundgen.MetronomeSoundGen
+import app.metrodrone.domain.metronome.soundgen.MetronomeSoundTreeBuilder
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -29,12 +38,24 @@ class MetroDronePlugin: FlutterPlugin {
   private lateinit var tunerStreamHandler: TunerStreamHandler
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    val context = flutterPluginBinding.applicationContext
+    val droneSoundGen = DroneSoundGen()
+    val metronomeSoundTreeBuilder = MetronomeSoundTreeBuilder(context)
+    val metronomeSoundGen = MetronomeSoundGen(metronomeSoundTreeBuilder)
+    val dronePulseGen = DronePulseGen(droneSoundGen)
+    val drone = Drone(droneSoundGen)
+    val clicker = MetronomeClicker()
+    val metronome = Metronome(context, metronomeSoundGen, dronePulseGen, drone, clicker)
+    val metronomeSoundPlayer = SoundPlayer()
+    val droneSoundPlayer = SoundPlayer()
+    val metrodrone = Metrodrone(metronome, drone, metronomeSoundPlayer, droneSoundPlayer)
+
     // Initialize handlers
-    metronomeChannelHandler = MetronomeChannelHandler(flutterPluginBinding.applicationContext)
+    metronomeChannelHandler = MetronomeChannelHandler(metrodrone)
     droneToneChannelHandler = DroneToneChannelHandler()
     tunerChannelHandler = TunerChannelHandler()
-    metronomeStreamHandler = MetronomeStreamHandler()
-    metronomeTickStreamHandler = MetronomeTickStreamHandler()
+    metronomeStreamHandler = MetronomeStreamHandler(metronome)
+    metronomeTickStreamHandler = MetronomeTickStreamHandler(metronome)
     droneToneStreamHandler = DroneToneStreamHandler()
     tunerStreamHandler = TunerStreamHandler()
     
