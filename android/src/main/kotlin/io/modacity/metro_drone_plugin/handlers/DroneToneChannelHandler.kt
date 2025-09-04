@@ -1,10 +1,13 @@
 package io.modacity.metro_drone_plugin.handlers
 
+import app.metrodrone.domain.drone.Drone
+import app.metrodrone.domain.drone.models.Note
+import app.metrodrone.domain.metrodrone.Metrodrone
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
-class DroneToneChannelHandler : MethodChannel.MethodCallHandler {
-    
+class DroneToneChannelHandler(private val metrodrone: Metrodrone) : MethodChannel.MethodCallHandler {
+
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "start" -> {
@@ -30,33 +33,33 @@ class DroneToneChannelHandler : MethodChannel.MethodCallHandler {
             }
         }
     }
-    
+
     private fun handleStart(call: MethodCall, result: MethodChannel.Result) {
-        // TODO: Implement drone tone start functionality
+        metrodrone.startDrone();
         result.success("start")
     }
-    
+
     private fun handleStop(call: MethodCall, result: MethodChannel.Result) {
-        // TODO: Implement drone tone stop functionality
+        metrodrone.stopDrone();
         result.success("stop")
     }
-    
+
     private fun handleSetPulsing(call: MethodCall, result: MethodChannel.Result) {
         val isPulsing = call.arguments as? Boolean
         if (isPulsing != null) {
-            // TODO: Implement pulsing setting
+            metrodrone.metronome.updatePulsarMode(isPulsing)
             result.success("isPulsing set to $isPulsing")
         } else {
             result.error("INVALID_ARGUMENTS", "isPulsing value missing", null)
         }
     }
-    
+
     private fun handleSetNote(call: MethodCall, result: MethodChannel.Result) {
         val args = call.arguments as? Map<String, Any>
         if (args != null) {
             val note = args["note"] as? String
             val octave = args["octave"] as? Int
-            
+
             if (note != null && octave != null) {
                 // TODO: Implement note setting
                 result.success("Set Note $note $octave")
@@ -67,7 +70,7 @@ class DroneToneChannelHandler : MethodChannel.MethodCallHandler {
             result.error("INVALID_ARGUMENTS", "Invalid argument format", null)
         }
     }
-    
+
     private fun handleSetTuningStandard(call: MethodCall, result: MethodChannel.Result) {
         val tuningStandard = call.arguments as? Double
         if (tuningStandard != null) {
@@ -77,7 +80,7 @@ class DroneToneChannelHandler : MethodChannel.MethodCallHandler {
             result.error("INVALID_ARGUMENTS", "tuningStandard value missing", null)
         }
     }
-    
+
     private fun handleSetSoundType(call: MethodCall, result: MethodChannel.Result) {
         val soundTypeString = call.arguments as? String
         if (soundTypeString != null) {

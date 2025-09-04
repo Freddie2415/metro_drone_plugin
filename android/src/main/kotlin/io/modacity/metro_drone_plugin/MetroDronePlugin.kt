@@ -52,7 +52,7 @@ class MetroDronePlugin: FlutterPlugin {
 
     // Initialize handlers
     metronomeChannelHandler = MetronomeChannelHandler(metrodrone)
-    droneToneChannelHandler = DroneToneChannelHandler()
+    droneToneChannelHandler = DroneToneChannelHandler(metrodrone)
     tunerChannelHandler = TunerChannelHandler()
     metronomeStreamHandler = MetronomeStreamHandler(metronome)
     metronomeTickStreamHandler = MetronomeTickStreamHandler(metronome)

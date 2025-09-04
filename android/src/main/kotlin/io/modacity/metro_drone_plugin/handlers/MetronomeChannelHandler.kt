@@ -1,9 +1,14 @@
 package io.modacity.metro_drone_plugin.handlers
 
 import android.os.Build
+import android.util.Log
+import app.metrodrone.domain.drone.models.DurationRatio
 import app.metrodrone.domain.metrodrone.Metrodrone
+import app.metrodrone.domain.metronome.models.SoundAccent
+import app.metrodrone.domain.metronome.models.Subdivision
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.Locale
 
 class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     MethodChannel.MethodCallHandler {
@@ -104,8 +109,18 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
             val durationPattern = args["durationPattern"] as? List<Double>
 
             if (name != null && description != null && restPattern != null && durationPattern != null) {
-                // TODO: Implement subdivision setting metrodrone.metronome.updateSubdivision(subdivision)
-                result.success("Subdivision updated")
+                try {
+                    val subdivision =
+                        createSubdivisionFromArgs(name, description, restPattern, durationPattern)
+                    metrodrone.metronome.updateSubdivision(subdivision)
+                    result.success("Subdivision updated")
+                } catch (e: Exception) {
+                    result.error(
+                        "SUBDIVISION_ERROR",
+                        "Failed to create subdivision: ${e.message}",
+                        null
+                    )
+                }
             } else {
                 result.error(
                     "INVALID_ARGUMENTS",
@@ -131,7 +146,7 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     private fun handleSetTimeSignatureDenominator(call: MethodCall, result: MethodChannel.Result) {
         val value = call.arguments as? Int
         if (value != null) {
-            // TODO: Implement time signature denominator setting
+            metrodrone.metronome.updateBeatDuration(value)
             result.success("timeSignatureDenominator set to $value")
         } else {
             result.error("INVALID_ARGUMENTS", "timeSignatureDenominator value missing", null)
@@ -141,7 +156,7 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     private fun handleSetNextTickType(call: MethodCall, result: MethodChannel.Result) {
         val tickIndex = call.arguments as? Int
         if (tickIndex != null) {
-            // TODO: Implement next tick type setting
+            metrodrone.metronome.setNextTickType(tickIndex)
             result.success("setNextTickType set to index: $tickIndex")
         } else {
             result.error("INVALID_ARGUMENTS", "setNextTickType tickIndex missing", null)
@@ -151,7 +166,9 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     private fun handleSetDroneDurationRatio(call: MethodCall, result: MethodChannel.Result) {
         val ratio = call.arguments as? Double
         if (ratio != null) {
-            // TODO: Implement drone duration ratio setting
+            metrodrone.drone.durationRatio = DurationRatio(value = ratio)
+            metrodrone.metronome.onFieldUpdate?.invoke("droneDurationRatio", ratio)
+            Log.d("Metronome", "Drone Duration Ratio: ${ratio}");
             result.success("DroneDurationRatio set to $ratio")
         } else {
             result.error("INVALID_ARGUMENTS", "DroneDurationRatio value missing", null)
@@ -161,10 +178,79 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     private fun handleSetTickTypes(call: MethodCall, result: MethodChannel.Result) {
         val tickTypes = call.arguments as? List<String>
         if (tickTypes != null) {
-            // TODO: Implement tick types setting
-            result.success("tickTypes set to $tickTypes")
+            try {
+                // Map Dart TickType strings to Android SoundAccent enum values
+                val soundAccents = tickTypes.map { tickTypeString ->
+                    mapTickTypeToSoundAccent(tickTypeString)
+                }
+
+                // Update tick types in metronome using new method
+                metrodrone.metronome.setTickTypes(soundAccents)
+                result.success("tickTypes set successfully")
+            } catch (e: Exception) {
+                result.error("TICK_TYPES_ERROR", "Failed to set tick types: ${e.message}", null)
+            }
         } else {
             result.error("INVALID_ARGUMENTS", "tickTypes value missing", null)
+        }
+    }
+
+    private fun createSubdivisionFromArgs(
+        name: String,
+        description: String,
+        restPattern: List<Boolean>,
+        durationPattern: List<Double>
+    ): Subdivision {
+        // Create a map from Dart subdivision names to Kotlin enum values for efficient lookup
+        val subdivisionMap = mapOf(
+            "QUARTER NOTES" to Subdivision.QUARTER,
+            "EIGHTH NOTES" to Subdivision.EIGHTH,
+            "SIXTEENTH NOTES" to Subdivision.SIXTEENTH,
+            "TRIPLET" to Subdivision.TRIPLET,
+            "SWING" to Subdivision.SWING,
+            "REST AND EIGHTH NOTE" to Subdivision.REST_AND_EIGHTH,
+            "DOTTED EIGHTH AND SIXTEENTH" to Subdivision.DOTTED_EIGHTH_AND_SIXTEENTH,
+            "16TH NOTE & DOTTED EIGHTH" to Subdivision.SIXTEENTH_AND_DOTTED_EIGHTH,
+            "2 SIXTEENTH NOTES & EIGHTH NOTE" to Subdivision.TWO_SIXTEENTH_AND_EIGHTH,
+            "EIGHTH NOTE & 2 SIXTEENTH NOTES" to Subdivision.EIGHTH_AND_TWO_SIXTEENTH,
+            "16TH REST, 16TH NOTE, 16TH REST, 16TH NOTE" to Subdivision.SIXTEENTH_REST_SIXTEENTH_NOTE_SIXTEENTH_REST_SIXTEENTH_NOTE,
+            "16TH NOTE, EIGHTH NOTE, 16TH NOTE" to Subdivision.SIXTEENTH_NOTE_EIGHTH_NOTE_SIXTEENTH_NOTE,
+            "2 TRIPLETS & TRIPLET REST" to Subdivision.TWO_TRIPLETS_AND_TRIPLET_REST,
+            "TRIPLET REST & 2 TRIPLETS" to Subdivision.TRIPLET_REST_AND_TWO_TRIPLETS,
+            "TRIPLET REST, TRIPLET, TRIPLET REST" to Subdivision.TRIPLET_REST_TRIPLET_TRIPLET_REST,
+            "QUINTUPLETS" to Subdivision.QUINTUPLETS,
+            "SEPTUPLETS" to Subdivision.SEPTUPLETS
+        )
+
+        // Try to match by name first (exact match)
+        val normalizedName = name.uppercase(Locale.ROOT)
+        subdivisionMap[normalizedName]?.let { return it }
+
+        // Try to match by title/description
+        val normalizedDescription = description.uppercase(Locale.ROOT)
+        Subdivision.values().find {
+            it.title.uppercase(Locale.ROOT) == normalizedDescription
+        }?.let { return it }
+
+        // Log warning for debugging if no match found
+        android.util.Log.w(
+            "MetronomeChannelHandler",
+            "No subdivision match found for name: '$name', description: '$description'. Using default."
+        )
+
+        return Subdivision.default
+    }
+
+    private fun mapTickTypeToSoundAccent(tickTypeString: String): SoundAccent {
+        return when (tickTypeString) {
+            "TickType.silence" -> SoundAccent.MUTE
+            "TickType.regular" -> SoundAccent.DEFAULT
+            "TickType.accent" -> SoundAccent.ACCENT
+            "TickType.strongAccent" -> SoundAccent.STRONG
+            else -> {
+                Log.w("MetronomeChannelHandler", "Unknown tick type: $tickTypeString, using default")
+                SoundAccent.DEFAULT
+            }
         }
     }
 }

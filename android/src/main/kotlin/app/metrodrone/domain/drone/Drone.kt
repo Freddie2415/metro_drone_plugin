@@ -25,7 +25,12 @@ class Drone(
     var amplitude = Amplitude.default
     var soundType = SoundType.default
     var tuning = Tuning.default
+    var onFieldUpdate: ((String, Any) -> Unit)? = null
     var durationRatio = DurationRatio.default
+        set(value) {
+            field = value
+            onFieldUpdate?.invoke("droneDurationRatio", value.value)
+        }
 
     fun start(
         onNextSamples: (ShortArray) -> Unit,

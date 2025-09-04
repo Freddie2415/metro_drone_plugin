@@ -6,6 +6,7 @@ import android.media.SoundPool
 import android.os.SystemClock
 import android.util.Log
 import app.metrodrone.domain.clicker.MetronomeClicker
+import app.metrodrone.domain.core.updateAt
 import app.metrodrone.domain.drone.Drone
 import app.metrodrone.domain.drone.soundgen.DronePulseGen
 import app.metrodrone.domain.metronome.models.Beat
@@ -33,9 +34,46 @@ class Metronome(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
     private var playingJob: Job? = null
     private var subdivision = Subdivision.default
+        set(value) {
+            field = value
+            val subdivisionMap = mapOf(
+                "name" to field.title,
+                "description" to field.title,
+                "restPattern" to field.parts.map { it.play },
+                "durationPattern" to field.parts.map { it.duration.size.toDouble() }
+            )
+            onFieldUpdate?.invoke("subdivision", subdivisionMap)
+        }
+
     private var bpm = Bpm.default
+        set(value) {
+            field = value;
+            onFieldUpdate?.invoke("bpm", value.value)
+        }
+
     private var timeSignature = TimeSignature.default
+        set(value) {
+            field = value
+            onFieldUpdate?.invoke("timeSignatureNumerator", value.tactSize)
+            onFieldUpdate?.invoke("timeSignatureDenominator", value.beatDuration)
+        }
+
     private var beats = Beat.defaultList
+        set(value) {
+            field = value
+
+            val tickTypes = field.map { beat ->
+                when (beat.accent) {
+                    SoundAccent.MUTE -> "silence"
+                    SoundAccent.DEFAULT -> "regular"
+                    SoundAccent.ACCENT -> "accent"
+                    SoundAccent.STRONG -> "strongAccent"
+                }
+            }
+
+            onFieldUpdate?.invoke("tickTypes", tickTypes)
+        }
+
     private var pulsarMode = false
 
     var onFieldUpdate: ((String, Any) -> Unit)? = null
@@ -70,17 +108,17 @@ class Metronome(
 
     fun updateBpm(value: Int) {
         bpm = Bpm(value)
-        onFieldUpdate?.invoke("bpm", value)
     }
 
     fun updateSubdivision(value: Subdivision) {
         subdivision = value
-//       TODO  onFieldUpdate?.invoke("subdivision", value)
+        beats = beats.map { it.copy(parts = subdivision.parts) }
+        updateBeats(beats)
+        Log.d("Metronome", "Set subdivision: ${subdivision.title}")
     }
 
     fun updateTactSize(value: Int) {
         timeSignature = timeSignature.copy(tactSize = value)
-        onFieldUpdate?.invoke("timeSignatureNumerator", value)
         Log.d("timeSignatureNumerator", value.toString());
         beats = when {
             value > beats.size -> {
@@ -104,18 +142,15 @@ class Metronome(
 
     fun updateBeatDuration(value: Int) {
         timeSignature = timeSignature.copy(beatDuration = value)
-//     TODO   onFieldUpdate?.invoke("beatDuration", value)
     }
 
     fun updateBeats(value: List<Beat>) {
         beats = value
         timeSignature = timeSignature.copy(tactSize = value.size)
-//      TODO  onFieldUpdate?.invoke("beats", value)
     }
 
     fun updatePulsarMode(value: Boolean) {
         pulsarMode = value
-//    TODO    onFieldUpdate?.invoke("pulsarMode", value)
     }
 
     fun start(
@@ -141,6 +176,23 @@ class Metronome(
             val valueToSet = min(newBpm, Bpm.MAX)
             updateBpm(valueToSet)
         }
+    }
+
+    fun setNextTickType(tickIndex: Int) {
+        beats = beats.updateAt(tickIndex) { it.copy(accent = it.accent.next) }
+        updateBeats(beats)
+    }
+
+    fun setTickTypes(tickTypes: List<SoundAccent>) {
+        beats = tickTypes.mapIndexed { index, accent ->
+            val parts = if (index < beats.size) {
+                beats[index].parts
+            } else {
+                subdivision.parts
+            }
+            Beat(parts = parts, accent = accent)
+        }
+        updateBeats(beats)
     }
 
     fun cleanup() {
