@@ -46,7 +46,7 @@ class Drone(
         set(value) {
             if (field != value) {
                 field = value
-                onFieldUpdate?.invoke("tuning", value.value)
+                onFieldUpdate?.invoke("tuningStandard", value.value)
             }
         }
     var durationRatio = DurationRatio.default
