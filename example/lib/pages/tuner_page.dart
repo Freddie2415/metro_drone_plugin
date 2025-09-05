@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:metro_drone_plugin/models/tuner.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class TunerPage extends StatefulWidget {
   const TunerPage({super.key});
@@ -92,7 +93,25 @@ class _TunerPageState extends State<TunerPage> {
     if (isActive) {
       isActive = await _tuner.stop();
     } else {
-      isActive = await _tuner.start();
+      // Request microphone permission before starting
+      final status = await Permission.microphone.request();
+      if (status == PermissionStatus.granted) {
+        try {
+          isActive = await _tuner.start();
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error starting tuner: $e')),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required for tuner')),
+          );
+        }
+      }
     }
     setState(() {});
   }
