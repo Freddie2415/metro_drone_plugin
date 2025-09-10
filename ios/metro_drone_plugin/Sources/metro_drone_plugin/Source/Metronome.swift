@@ -221,12 +221,14 @@ class Metronome: ObservableObject {
     private var beatsToScheduleAhead: Int = 2          // <-- NEW (можете менять)
     private var scheduleBeatIndex = 0
     private let mainMixerFormat: AVAudioFormat
+    private weak var metroDrone: MetroDrone?
 
     public var onFieldUpdated: ((String, Any) -> Void)?
     public var onTickUpdated: ((Int) -> Void)?
 
-    init(audioEngine: AVAudioEngine) {
+    init(audioEngine: AVAudioEngine, metroDrone: MetroDrone? = nil) {
         self.audioEngine = audioEngine
+        self.metroDrone = metroDrone
         self.renderer = OfflineRenderer()
         self.tickPlayerNode = AVAudioPlayerNode()
         self.tapPlayerNode = AVAudioPlayerNode()
@@ -270,6 +272,10 @@ class Metronome: ObservableObject {
 
         
         setupAudioEngine()
+    }
+
+    func setMetroDroneReference(_ metroDrone: MetroDrone) {
+        self.metroDrone = metroDrone
     }
     
     func calculateBufferDuration(buffer: AVAudioPCMBuffer) -> Double {
@@ -379,11 +385,7 @@ class Metronome: ObservableObject {
     func start() {
         guard !isPlaying else { return }
 
-        do {
-            try audioEngine.start()
-        } catch {
-            print("Ошибка при запуске аудио движка: \(error)")
-        }
+        metroDrone?.requestAudioEngine(for: "Metronome")
 
         isPlaying = true
         tickIndex = 0
@@ -409,6 +411,9 @@ class Metronome: ObservableObject {
         beatsScheduled = 0
         nextBeatSampleTime = 0
         tickIndex = 0
+
+        metroDrone?.releaseAudioEngine(for: "Metronome")
+
         print("Metronome stopped.")
     }
     
@@ -838,6 +843,10 @@ class Metronome: ObservableObject {
             }
         } else {
             print("Not enough taps to calculate BPM.")
+        }
+
+        if metroDrone?.audioEngine.isRunning == false {
+            metroDrone?.requestAudioEngine(for: "Metronome")
         }
         
         playTapSound()

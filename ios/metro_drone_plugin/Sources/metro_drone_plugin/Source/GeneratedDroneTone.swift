@@ -51,6 +51,7 @@ class GeneratedDroneTone2: ObservableObject {
     // MARK: - Private AudioEngine
     private let engine: AVAudioEngine
     private let metronome: Metronome
+    private weak var metroDrone: MetroDrone?
     private var sourceNode: AVAudioSourceNode?
     
     // MARK: - Sample Rate
@@ -76,10 +77,15 @@ class GeneratedDroneTone2: ObservableObject {
     private let waveTableManager = WaveTableManager(tableSize: 4096)
     
     // MARK: - Init
-    init(audioEngine: AVAudioEngine, metronome: Metronome) {
+    init(audioEngine: AVAudioEngine, metronome: Metronome, metroDrone: MetroDrone? = nil) {
         self.engine = audioEngine
         self.metronome = metronome
+        self.metroDrone = metroDrone
         setupSourceNode()
+    }
+
+    func setMetroDroneReference(_ metroDrone: MetroDrone) {
+        self.metroDrone = metroDrone
     }
     
     // MARK: - Setup
@@ -248,6 +254,9 @@ class GeneratedDroneTone2: ObservableObject {
     
     func startDrone() {
         guard !isPlaying else { return }
+
+        metroDrone?.requestAudioEngine(for: "GeneratedDroneTone")
+
         phaseSine = 0.0
         phaseOrgan = [0.0, 0.0, 0.0, 0.0] // для 4 гармоник
         phaseCello = 0.0
@@ -255,14 +264,9 @@ class GeneratedDroneTone2: ObservableObject {
         // currentAmplitudeScale может быть > 0, если только что было выключено
         // но мы перезапускаем, допустим с 0.0
         currentAmplitudeScale = 0.0
-        
-        do {
-            try engine.start()
-            isPlaying = true
-            self.sourceNode?.volume = 1.0
-        } catch {
-            print("Ошибка при запуске аудиодвижка: \(error.localizedDescription)")
-        }
+
+        isPlaying = true
+        self.sourceNode?.volume = 1.0
     }
     
     func stopDrone() {
@@ -288,7 +292,10 @@ class GeneratedDroneTone2: ObservableObject {
             
             // Если хотите именно остановить engine:
             self.sourceNode?.volume = 0.0
+            self.metroDrone?.releaseAudioEngine(for: "GeneratedDroneTone")
         }
+
+        print("Generated drone tone stopped.")
     }
     
     func setSoundType(sound: SoundType) {
