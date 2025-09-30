@@ -1,6 +1,6 @@
 name: metro_drone_plugin
 description: "Metronome, Drone, Tuner Flutter plugin project."
-version: 0.0.4
+version: 0.0.5
 homepage: "https://github.com/Freddie2415/metro_drone"
 
 environment:

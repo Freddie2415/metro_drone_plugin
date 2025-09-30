@@ -13,8 +13,8 @@ import kotlin.math.sqrt
 class TunerEngine {
     var onFieldUpdate: ((String, Any) -> Unit)? = null
     private val sampleRate: Int = 44100
-    private val bufferSize: Int = 2048
-    private val bufferOverlap: Int = 1024
+    private val bufferSize: Int = 32768
+    private val bufferOverlap: Int = 16384
 
     private var tuningA: Double = 440.0
         set(value) {
