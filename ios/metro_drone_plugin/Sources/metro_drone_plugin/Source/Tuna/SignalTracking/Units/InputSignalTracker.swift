@@ -16,6 +16,7 @@ class InputSignalTracker: SignalTracker {
     private let session = AVAudioSession.sharedInstance()
     #endif
     private let bus = 0
+    private var isAudioSetup = false
 
     /// The peak level of the signal
     var peakLevel: Float? {
@@ -37,7 +38,6 @@ class InputSignalTracker: SignalTracker {
     required init(bufferSize: AVAudioFrameCount = 16384, delegate: SignalTrackerDelegate? = nil) {
         self.bufferSize = bufferSize
         self.delegate   = delegate
-        setupAudio()
     }
 
     // MARK: - Tracking
@@ -49,6 +49,11 @@ class InputSignalTracker: SignalTracker {
         return
 
         #else
+
+        if !isAudioSetup {
+            setupAudio()
+            isAudioSetup = true
+        }
 
         #if os(iOS)
         try session.setCategory(.playAndRecord)
