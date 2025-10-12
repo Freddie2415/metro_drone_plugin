@@ -286,13 +286,17 @@ class Metronome: ObservableObject {
     deinit {
         dispose()
     }
-    
+
     func dispose() {
         stop()
         tapTimer?.invalidate()
         audioEngine.stop()
         tickPlayerNode.stop()
         tapPlayerNode.stop()
+
+        // Clear callbacks to prevent retain cycles
+        onFieldUpdated = nil
+        onTickUpdated = nil
 
         regularTickBuffer = nil
         tapBuffer = nil
@@ -533,20 +537,21 @@ class Metronome: ObservableObject {
             // ——— Вызов «колбэка» для UI в момент звучания ———
             // Считаем, какой будет текущий бит (для UI)
             let callbackTick = tickIndex
-            
+
             if let nodeBeatTime = tickPlayerNode.nodeTime(forPlayerTime: playerBeatTime) {
                 // Узнаём задержку (latency) для более точного расчёта
                 let output = audioEngine.outputNode
                 let latencyHostTicks = AVAudioTime.hostTime(forSeconds: output.presentationLatency)
-                
+
                 // Когда реально прозвучит (учитывая задержку устройства)
                 let dispatchTime = DispatchTime(uptimeNanoseconds: nodeBeatTime.hostTime + latencyHostTicks)
-                
+
                 // Ставим задачу обновления UI
-                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: dispatchTime) {
-                    guard self.isPlaying else { return }
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: dispatchTime) { [weak self] in
+                    guard let self = self, self.isPlaying else { return }
                     // Обновим UI на главной очереди
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
                         self.currentTick = callbackTick + 1
                         self.flash.toggle()
                         self.onTickUpdated?(self.currentTick)
@@ -751,15 +756,17 @@ class Metronome: ObservableObject {
     }
     
     func setBPM(_ newBPM: Int) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             self.bpm = max(20, min(newBPM, 400))
             print("BPM set to: \(self.bpm)")
             if self.isPlaying {
-                DispatchQueue.global(qos: .userInitiated).async {
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                    guard let self = self else { return }
                     self.prepareBeatsBuffer()
                     let beatSampleTime = AVAudioFramePosition(self.nextBeatSampleTime)
                     let playerBeatTime = AVAudioTime(sampleTime: beatSampleTime, atRate: self.bufferSampleRate)
-                    
+
                     self.tickPlayerNode.play(at: playerBeatTime)
                 }
             }
@@ -792,15 +799,16 @@ class Metronome: ObservableObject {
     }
     
     func setNextTickType(tickIndex: Int) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             guard tickIndex >= 0 && tickIndex < self.tickTypes.count else {
                 print("Index out of bounds")
                 return
             }
-            
+
             // Получаем текущий тип
             let currentType = self.tickTypes[tickIndex]
-            
+
             // Находим следующий тип циклично
             if let currentIndex = TickType.allCases.firstIndex(of: currentType) {
                 let nextIndex = (currentIndex + 1) % TickType.allCases.count
@@ -808,7 +816,7 @@ class Metronome: ObservableObject {
 
                 self.onFieldUpdated?("tickTypes", self.tickTypes.map { String(describing: $0) })
             }
-            
+
             if self.isPlaying {
                 self.prepareBeatsBuffer()
             }

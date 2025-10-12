@@ -21,6 +21,13 @@ class Tuner: ObservableObject, PitchEngineDelegate {
         pitchEngine = PitchEngine(delegate: self)
     }
 
+    deinit {
+        pitchEngine?.stop()
+        pitchEngine = nil
+        onFieldUpdated = nil
+        print("Tuner deinitialized")
+    }
+
     func start() {
         pitchEngine?.levelThreshold = -30
         pitchEngine?.start()

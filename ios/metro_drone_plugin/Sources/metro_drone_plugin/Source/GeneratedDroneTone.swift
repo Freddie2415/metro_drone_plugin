@@ -84,6 +84,16 @@ class GeneratedDroneTone2: ObservableObject {
         setupSourceNode()
     }
 
+    deinit {
+        stopDrone()
+        onFieldUpdated = nil
+        if let node = sourceNode {
+            engine.detach(node)
+        }
+        sourceNode = nil
+        print("GeneratedDroneTone2 deinitialized")
+    }
+
     func setMetroDroneReference(_ metroDrone: MetroDrone) {
         self.metroDrone = metroDrone
     }
@@ -271,25 +281,27 @@ class GeneratedDroneTone2: ObservableObject {
     
     func stopDrone() {
         guard isPlaying else { return }
-        
+
         // Переводим флаг в false => applyFadeEnvelope() начнёт уменьшать currentAmplitudeScale
         isPlaying = false
-        
+
         // Не обнуляем фазы сразу, не сбрасываем volume!
         // Ждём в фоновом потоке, пока громкость дойдёт до нуля
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+
             // Ждём, пока плавный фейд-аут завершится
             while self.currentAmplitudeScale > 0.0 {
                 // небольшой «сна» в микросекундах, чтобы не грузить процессор вхолостую
                 usleep(2000) // 2ms, например
             }
-            
+
             // Когда currentAmplitudeScale == 0, можно останавливать движок
             // и/или сбрасывать фазы
             self.phaseSine = 0.0
             self.phaseOrgan = [0.0, 0.0, 0.0, 0.0]
             self.phaseCello = 0.0
-            
+
             // Если хотите именно остановить engine:
             self.sourceNode?.volume = 0.0
             self.metroDrone?.releaseAudioEngine(for: "GeneratedDroneTone")
@@ -392,10 +404,11 @@ class GeneratedDroneTone2: ObservableObject {
     func setNote(note: String, octave: Int) {
         currentNote = note
         currentOctave = octave
-        
+
         frequency = MIDIHelper.frequency(note: note, octave: octave, tuningStandard: tuningStandartA)
-        
-        DispatchQueue.global(qos: .userInitiated).async {
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
             if self.isPulsing {
                 let buffer = self.createNoteBuffer()
                 self.metronome.setNoteBuffer(buffer: buffer!)
