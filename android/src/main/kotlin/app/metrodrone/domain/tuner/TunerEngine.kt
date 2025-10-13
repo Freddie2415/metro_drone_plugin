@@ -30,6 +30,7 @@ class TunerEngine {
         val centsOff: Double,
     )
 
+    private var dispatcher: MicrophoneAudioDispatcher? = null
     private var dispatcherThread: Thread? = null
     private var isRunning = false
 
@@ -38,16 +39,18 @@ class TunerEngine {
     }
 
     fun start(onUpdate: (Result) -> Unit) {
-        if (isRunning) return
+        if (isRunning) {
+            stop() // Stop existing session before starting new one
+        }
         isRunning = true
 
-        val dispatcher = MicrophoneAudioDispatcher(
+        dispatcher = MicrophoneAudioDispatcher(
             sampleRate,
             bufferSize,
             bufferOverlap
         )
 
-        dispatcher.addAudioProcessor(EnergyGate())
+        dispatcher?.addAudioProcessor(EnergyGate())
 
         val processor = PitchProcessor(
             PitchProcessor.PitchEstimationAlgorithm.YIN,
@@ -71,13 +74,28 @@ class TunerEngine {
         }
 
 
-        dispatcher.addAudioProcessor(processor)
+        dispatcher?.addAudioProcessor(processor)
         dispatcherThread = Thread(dispatcher, "Tuner-Dispatcher").apply { start() }
     }
 
     fun stop() {
         isRunning = false
+
+        // Stop dispatcher to release microphone resources
+        dispatcher?.stop()
+
+        // Interrupt the thread
         dispatcherThread?.interrupt()
+
+        // Wait for thread to finish (max 1 second)
+        try {
+            dispatcherThread?.join(1000)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+
+        // Clean up references
+        dispatcher = null
         dispatcherThread = null
     }
 
