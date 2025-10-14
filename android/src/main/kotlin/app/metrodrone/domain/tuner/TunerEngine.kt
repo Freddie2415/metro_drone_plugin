@@ -13,8 +13,8 @@ import kotlin.math.sqrt
 class TunerEngine {
     var onFieldUpdate: ((String, Any) -> Unit)? = null
     private val sampleRate: Int = 44100
-    private val bufferSize: Int = 32768
-    private val bufferOverlap: Int = 16384
+    private val bufferSize: Int = 8192
+    private val bufferOverlap: Int = 4096
 
     private var tuningA: Double = 440.0
         set(value) {
@@ -68,6 +68,14 @@ class TunerEngine {
                         hz = freq,
                         noteName = noteName,
                         centsOff = cents,
+                    )
+                )
+            } else {
+                onUpdate(
+                    Result(
+                        hz = 0f,
+                        noteName = "",
+                        centsOff = 0.0,
                     )
                 )
             }

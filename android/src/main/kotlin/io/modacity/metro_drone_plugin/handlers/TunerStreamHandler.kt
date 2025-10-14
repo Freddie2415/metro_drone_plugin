@@ -39,7 +39,13 @@ class TunerStreamHandler(val tunerEngine: TunerEngine) : EventChannel.StreamHand
     }
 
     // Parse note name like "A4" into note "A" and octave "4"
+    // Returns empty strings for empty input (reset state)
     private fun parseNoteName(noteName: String): Pair<String, String> {
+        // Handle empty string (reset state) - matches iOS behavior
+        if (noteName.isEmpty()) {
+            return "" to ""
+        }
+
         val regex = Regex("([A-G]#?)(-?\\d+)")
         val match = regex.find(noteName)
         return if (match != null) {

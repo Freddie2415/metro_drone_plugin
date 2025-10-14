@@ -37,14 +37,12 @@ class _TunerPageState extends State<TunerPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text("Note: ${snapshot.data?.note ?? "-"}",
+                    Text("Note: ${snapshot.data?.note  ?? "-"}${snapshot.data?.octave}",
                         style: Theme.of(context).textTheme.displaySmall),
                     Text(
-                        "Cents Off: ${snapshot.data?.closestOffsetCents.toStringAsFixed(2) ?? "-"}",
-                        style: Theme.of(context).textTheme.displaySmall),
+                        "Cents Off: ${snapshot.data?.closestOffsetCents.toStringAsFixed(2) ?? "-"}"),
                     Text(
-                        "Hz: ${snapshot.data?.frequency.toStringAsFixed(2) ?? "-"}",
-                        style: Theme.of(context).textTheme.displaySmall),
+                        "Hz: ${snapshot.data?.frequency.toStringAsFixed(2) ?? "-"}"),
                   ],
                 );
               }),
