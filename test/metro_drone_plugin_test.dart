@@ -78,6 +78,13 @@ class MockMetroDronePluginPlatform
   @override
   // TODO: implement tickStream
   Stream<int> get tickStream => throw UnimplementedError();
+
+
+  @override
+  Future<String?> configure({int? bpm, int? timeSignatureNumerator, int? timeSignatureDenominator, List<TickType>? tickTypes, Subdivision? subdivision, double? droneDurationRatio, bool? isDroning}) {
+    // TODO: implement configure
+    throw UnimplementedError();
+  }
 }
 
 void main() {

@@ -38,6 +38,7 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
         self.methodHandlers["setNextTickType"] = self.handleSetNextTickType
         self.methodHandlers["setDroneDurationRatio"] = self.handleSetDroneDurationRatio
         self.methodHandlers["setTickTypes"] = self.handleSetTickTypes
+        self.methodHandlers["configure"] = self.handleConfigure
     }
 
     private func handleGetPlatformVersion(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -137,5 +138,51 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
         } else {
            result(FlutterError(code: "INVALID_ARGUMENTS", message: "BPM value missing", details: nil))
         }
-   }
+    }
+
+    private func handleConfigure(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any] else {
+            result(FlutterError(code: "INVALID_ARGUMENTS",
+                              message: "Invalid argument format for configure",
+                              details: nil))
+            return
+        }
+
+        let bpm = args["bpm"] as? Int
+        let timeSignatureNumerator = args["timeSignatureNumerator"] as? Int
+        let timeSignatureDenominator = args["timeSignatureDenominator"] as? Int
+        let droneDurationRatio = args["droneDurationRatio"] as? Double
+        let isDroning = args["isDroning"] as? Bool
+
+        var tickTypes: [TickType]? = nil
+        if let tickTypeStrings = args["tickTypes"] as? [String] {
+            tickTypes = tickTypeStrings.compactMap { TickType(from: $0) }
+        }
+
+        var subdivision: Subdivision? = nil
+        if let subdivisionMap = args["subdivision"] as? [String: Any],
+           let name = subdivisionMap["name"] as? String,
+           let description = subdivisionMap["description"] as? String,
+           let restPattern = subdivisionMap["restPattern"] as? [Bool],
+           let durationPattern = subdivisionMap["durationPattern"] as? [Double] {
+            subdivision = Subdivision(
+                name: name,
+                description: description,
+                restPattern: restPattern,
+                durationPattern: durationPattern
+            )
+        }
+
+        self.metronome.configure(
+            bpm: bpm,
+            timeSignatureNumerator: timeSignatureNumerator,
+            timeSignatureDenominator: timeSignatureDenominator,
+            tickTypes: tickTypes,
+            subdivision: subdivision,
+            droneDurationRatio: droneDurationRatio,
+            isDroning: isDroning
+        )
+
+        result("Metronome configured successfully")
+    }
 }

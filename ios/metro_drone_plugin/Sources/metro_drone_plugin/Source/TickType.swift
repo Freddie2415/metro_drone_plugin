@@ -5,7 +5,7 @@
 //  Created by Фаррух Хамракулов on 06/01/25.
 //
 
-enum TickType: CaseIterable {
+enum TickType: CaseIterable, Equatable {
     case silence
     case regular
     case accent

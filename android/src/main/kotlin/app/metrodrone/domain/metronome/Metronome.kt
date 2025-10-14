@@ -75,6 +75,10 @@ class Metronome(
         }
 
     private var pulsarMode = false
+        set(value) {
+            field = value
+            onFieldUpdate?.invoke("isDroning", value)
+        }
 
     var onFieldUpdate: ((String, Any) -> Unit)? = null
     var onTickUpdated: ((Int) -> Unit)? = null

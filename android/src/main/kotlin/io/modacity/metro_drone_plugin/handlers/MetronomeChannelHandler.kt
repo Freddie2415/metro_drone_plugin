@@ -60,6 +60,10 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
                 handleSetTickTypes(call, result)
             }
 
+            "configure" -> {
+                handleConfigure(call, result)
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -192,6 +196,68 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
             }
         } else {
             result.error("INVALID_ARGUMENTS", "tickTypes value missing", null)
+        }
+    }
+
+    private fun handleConfigure(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<String, Any>
+        if (args == null) {
+            result.error("INVALID_ARGUMENTS", "Invalid argument format for configure", null)
+            return
+        }
+
+        try {
+            // Update BPM if provided
+            (args["bpm"] as? Int)?.let { bpm ->
+                metrodrone.metronome.updateBpm(bpm)
+            }
+
+            // Update time signature numerator if provided
+            (args["timeSignatureNumerator"] as? Int)?.let { numerator ->
+                metrodrone.metronome.updateTactSize(numerator)
+            }
+
+            // Update time signature denominator if provided
+            (args["timeSignatureDenominator"] as? Int)?.let { denominator ->
+                metrodrone.metronome.updateBeatDuration(denominator)
+            }
+
+            // Update drone duration ratio if provided
+            (args["droneDurationRatio"] as? Double)?.let { ratio ->
+                metrodrone.drone.durationRatio = DurationRatio(value = ratio)
+                metrodrone.metronome.onFieldUpdate?.invoke("droneDurationRatio", ratio)
+            }
+
+            // Update pulsar mode (isDroning) if provided
+            (args["isDroning"] as? Boolean)?.let { isDroning ->
+                metrodrone.metronome.updatePulsarMode(isDroning)
+            }
+
+            // Update tick types if provided
+            (args["tickTypes"] as? List<*>)?.let { tickTypesList ->
+                val tickTypes = tickTypesList.filterIsInstance<String>()
+                val soundAccents = tickTypes.map { tickTypeString ->
+                    mapTickTypeToSoundAccent(tickTypeString)
+                }
+                metrodrone.metronome.setTickTypes(soundAccents)
+            }
+
+            // Update subdivision if provided
+            (args["subdivision"] as? Map<*, *>)?.let { subdivisionMap ->
+                val name = subdivisionMap["name"] as? String
+                val description = subdivisionMap["description"] as? String
+                val restPattern = (subdivisionMap["restPattern"] as? List<*>)?.filterIsInstance<Boolean>()
+                val durationPattern = (subdivisionMap["durationPattern"] as? List<*>)?.filterIsInstance<Double>()
+
+                if (name != null && description != null && restPattern != null && durationPattern != null) {
+                    val subdivision = createSubdivisionFromArgs(name, description, restPattern, durationPattern)
+                    metrodrone.metronome.updateSubdivision(subdivision)
+                }
+            }
+
+            result.success("Metronome configured successfully")
+        } catch (e: Exception) {
+            result.error("CONFIGURE_ERROR", "Failed to configure metronome: ${e.message}", null)
         }
     }
 

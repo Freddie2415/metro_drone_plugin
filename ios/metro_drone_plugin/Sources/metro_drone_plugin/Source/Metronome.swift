@@ -3,90 +3,156 @@ import AVFoundation
 import SwiftUI
 
 class Metronome: ObservableObject {
+    // MARK: - Constants
+    private static let fadeFramesDuration = 1024
+    private static let fadePercentage = 0.1  // 10% of sound frames
+    private static let minBPM = 20
+    private static let maxBPM = 400
+    private static let minDroneDurationRatio = 0.1
+    private static let maxDroneDurationRatio = 0.99
+
     private let audioEngine: AVAudioEngine
     private let tickPlayerNode: AVAudioPlayerNode
     private let tapPlayerNode: AVAudioPlayerNode
     private var regularTickBuffer: AVAudioPCMBuffer?
     private var tapBuffer: AVAudioPCMBuffer?
     private var droneBuffer: AVAudioPCMBuffer?
-    private var noteBuffer: AVAudioPCMBuffer?
+    private let noteBufferLock = NSLock()
+    private var _noteBuffer: AVAudioPCMBuffer?
+    private var noteBuffer: AVAudioPCMBuffer? {
+        get { noteBufferLock.lock(); defer { noteBufferLock.unlock() }; return _noteBuffer }
+        set { noteBufferLock.lock(); _noteBuffer = newValue; noteBufferLock.unlock() }
+    }
     private var silenceTickBuffer: AVAudioPCMBuffer?
     private var accentTickBuffer: AVAudioPCMBuffer?
     private var strongAccentTickBuffer: AVAudioPCMBuffer?
     private var beatsBuffer: [AVAudioPCMBuffer] = []
-    
+    private let beatsBufferLock = NSLock()
+
     private var tickIndex: Int = 0
     private var tapTimes: [Date] = []
     private var tapTimer: Timer?
     private let tapTempoDetector : DetectTapTempo = DetectTapTempo(timeOut: 1.5, minimumTaps: 3)
     private var startTime: CFTimeInterval?
-    
+
     // Drone Properties
-    private var isDroning: Bool = false
     private let renderer: OfflineRenderer
     private var soundType: SoundType = .sine
     private var note: UInt8 = 60
     private var velocity: UInt8 = 127
-    private var droneDurationRatio: TimeInterval = 0.5 {
-        didSet {
-            self.onFieldUpdated?("droneDurationRatio", droneDurationRatio)
-        }
-    }
     
     // Metronome Properties
     @Published var flash: Bool = false
-    @Published var bpm: Int = 120 {
-        didSet {
-            onFieldUpdated?("bpm", bpm)
-        }
-    }
     @Published var isPlaying: Bool = false {
         didSet {
             onFieldUpdated?("isPlaying", isPlaying)
         }
     }
-    @Published var timeSignatureNumerator: Int = 4 {
+    @Published var currentTick: Int = 0
+
+    // Unified configuration structure
+    @Published var configuration: MetronomeConfiguration = .default {
         didSet {
-            if timeSignatureNumerator > tickTypes.count {
-                // Добавляем новые элементы (по умолчанию `.regular`)
-                tickTypes.append(contentsOf: Array(repeating: .regular, count: timeSignatureNumerator - tickTypes.count))
-            } else if timeSignatureNumerator < tickTypes.count {
-                // Срезаем лишние элементы
-                tickTypes = Array(tickTypes.prefix(timeSignatureNumerator))
-            }
-            
-            if isPlaying {
-                self.stop()
-                self.start()
+            // Notify Flutter about configuration changes
+            onFieldUpdated?("bpm", configuration.bpm)
+            onFieldUpdated?("timeSignatureNumerator", configuration.timeSignatureNumerator)
+            onFieldUpdated?("timeSignatureDenominator", configuration.timeSignatureDenominator)
+            onFieldUpdated?("tickTypes", configuration.tickTypes.map { String(describing: $0) })
+            onFieldUpdated?("subdivision", [
+                "name": configuration.subdivision.name,
+                "description": configuration.subdivision.description,
+                "restPattern": configuration.subdivision.restPattern,
+                "durationPattern": configuration.subdivision.durationPattern,
+            ])
+            onFieldUpdated?("droneDurationRatio", configuration.droneDurationRatio)
+            onFieldUpdated?("isDroning", configuration.isDroning)
+
+            // Handle time signature numerator changes
+            if oldValue.timeSignatureNumerator != configuration.timeSignatureNumerator {
+                if isPlaying {
+                    self.stop()
+                    self.start()
+                }
             }
 
-            onFieldUpdated?("timeSignatureNumerator", timeSignatureNumerator)
-            onFieldUpdated?("tickTypes", tickTypes.map { String(describing: $0) })
+            // Regenerate buffers only once when configuration changes
+            if oldValue != configuration {
+                prepareBeatsBufferAsync()
+            }
         }
     }
-    @Published var timeSignatureDenominator: Int = 4 {
-        didSet {
-            self.onFieldUpdated?("timeSignatureDenominator", timeSignatureDenominator)
+
+    // Computed properties for backward compatibility
+    var bpm: Int {
+        get { configuration.bpm }
+        set {
+            var newConfig = configuration
+            newConfig.bpm = max(Self.minBPM, min(newValue, Self.maxBPM))
+            configuration = newConfig
         }
     }
-    @Published var currentTick: Int = 0
-    @Published var tickTypes: [TickType] = Array(repeating: .accent, count: 4)
-    @Published var subdivision: Subdivision = Subdivision(
-        name: "Quarter Notes",
-        description: "One quarter note per beat",
-        restPattern: [true],
-        durationPattern: [1.0]
-    ) {
-        didSet{
-            onFieldUpdated?("subdivision", [
-                "name": subdivision.name,
-                "description": subdivision.description,
-                "restPattern": subdivision.restPattern,
-                "durationPattern": subdivision.durationPattern,
-            ])
-            self.prepareBeatsBuffer()
+
+    var timeSignatureNumerator: Int {
+        get { configuration.timeSignatureNumerator }
+        set {
+            var newConfig = configuration
+            newConfig.timeSignatureNumerator = newValue
+            // Adjust tickTypes count to match new numerator
+            if newValue > newConfig.tickTypes.count {
+                newConfig.tickTypes.append(contentsOf: Array(repeating: .regular, count: newValue - newConfig.tickTypes.count))
+            } else if newValue < newConfig.tickTypes.count {
+                newConfig.tickTypes = Array(newConfig.tickTypes.prefix(newValue))
+            }
+            configuration = newConfig
         }
     }
+
+    var timeSignatureDenominator: Int {
+        get { configuration.timeSignatureDenominator }
+        set {
+            var newConfig = configuration
+            newConfig.timeSignatureDenominator = newValue
+            configuration = newConfig
+        }
+    }
+
+    var tickTypes: [TickType] {
+        get { configuration.tickTypes }
+        set {
+            var newConfig = configuration
+            newConfig.tickTypes = newValue
+            configuration = newConfig
+        }
+    }
+
+    var subdivision: Subdivision {
+        get { configuration.subdivision }
+        set {
+            var newConfig = configuration
+            newConfig.subdivision = newValue
+            configuration = newConfig
+        }
+    }
+
+    var isDroning: Bool {
+        get { configuration.isDroning }
+        set {
+            var newConfig = configuration
+            newConfig.isDroning = newValue
+            configuration = newConfig
+        }
+    }
+
+    var droneDurationRatio: Double {
+        get { configuration.droneDurationRatio }
+        set {
+            var newConfig = configuration
+            newConfig.droneDurationRatio = max(Self.minDroneDurationRatio,
+                                               min(Self.maxDroneDurationRatio, newValue))
+            configuration = newConfig
+        }
+    }
+
     @Published var subdivisions: [Subdivision] = [
         // 1
         Subdivision(
@@ -215,6 +281,8 @@ class Metronome: ObservableObject {
     // ================
     private var bufferSampleRate: Double = 44100.0     // <-- NEW (установим в init)
     private let syncQueue = DispatchQueue(label: "MetronomeQueue")  // <-- NEW
+    private let bufferPrepQueue = DispatchQueue(label: "MetronomeBufferPrepQueue", qos: .userInitiated)
+    private var bufferPrepWorkItem: DispatchWorkItem?
 
     private var nextBeatSampleTime: Double = 0.0       // <-- NEW
     private var beatsScheduled: Int = 0                // <-- NEW
@@ -222,6 +290,22 @@ class Metronome: ObservableObject {
     private var scheduleBeatIndex = 0
     private let mainMixerFormat: AVAudioFormat
     private weak var metroDrone: MetroDrone?
+
+    // Thread-safe beat index using atomic operations
+    private let bIndexLock = NSLock()
+    private var _bIndex: Int = 0
+    private var bIndex: Int {
+        get {
+            bIndexLock.lock()
+            defer { bIndexLock.unlock() }
+            return _bIndex
+        }
+        set {
+            bIndexLock.lock()
+            defer { bIndexLock.unlock() }
+            _bIndex = newValue
+        }
+    }
 
     public var onFieldUpdated: ((String, Any) -> Void)?
     public var onTickUpdated: ((Int) -> Void)?
@@ -290,7 +374,12 @@ class Metronome: ObservableObject {
     func dispose() {
         stop()
         tapTimer?.invalidate()
-        audioEngine.stop()
+
+        // Cancel any pending buffer preparation tasks
+        bufferPrepWorkItem?.cancel()
+        bufferPrepWorkItem = nil
+
+        // audioEngine is owned by MetroDrone, should not be stopped here
         tickPlayerNode.stop()
         tapPlayerNode.stop()
 
@@ -354,19 +443,21 @@ class Metronome: ObservableObject {
         }
         
         // Иначе делаем ресэмплинг
-        let converter = AVAudioConverter(from: sourceFormat, to: format)!
+        guard let converter = AVAudioConverter(from: sourceFormat, to: format) else {
+            throw NSError(domain: "Metronome", code: -3, userInfo: [NSLocalizedDescriptionKey: "Failed to create audio converter from \(sourceFormat) to \(format)"])
+        }
         let resampledFrameCapacity = AVAudioFrameCount(Double(sourceBuffer.frameLength) * format.sampleRate / sourceFormat.sampleRate)
         guard let resampledBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: resampledFrameCapacity) else {
             throw NSError(domain: "Metronome", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to create resampled AVAudioPCMBuffer"])
         }
         resampledBuffer.frameLength = resampledFrameCapacity
-        
+
         // Выполняем конвертацию
         let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
             outStatus.pointee = .haveData
             return sourceBuffer
         }
-        
+
         converter.convert(to: resampledBuffer, error: nil, withInputFrom: inputBlock)
         
         return resampledBuffer
@@ -389,23 +480,35 @@ class Metronome: ObservableObject {
     func start() {
         guard !isPlaying else { return }
 
-        metroDrone?.requestAudioEngine(for: "Metronome")
+        guard let metroDrone = metroDrone else {
+            print("⚠️ Warning: MetroDrone reference is nil, cannot start metronome")
+            return
+        }
+
+        metroDrone.requestAudioEngine(for: "Metronome")
 
         isPlaying = true
         tickIndex = 0
         currentTick = 0
         nextBeatSampleTime = 0
         beatsScheduled = 0
-        
-        prepareBeatsBuffer()
-        
-        // Синхронно запланируем биты
-        bIndex = 0
-        syncQueue.async {
-            self.scheduleBeats()
+
+        // Async buffer preparation to avoid blocking UI
+        bufferPrepQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            if self.beatsBuffer.isEmpty {
+                self.prepareBeatsBuffer()
+            }
+
+            // Schedule beats after buffers are ready
+            self.bIndex = 0
+            self.syncQueue.async {
+                self.scheduleBeats()
+            }
+
+            print("Metronome started with BPM: \(self.bpm).")
         }
-        
-        print("Metronome started with BPM: \(bpm).")
     }
     
     func stop() {
@@ -416,19 +519,17 @@ class Metronome: ObservableObject {
         nextBeatSampleTime = 0
         tickIndex = 0
 
-        metroDrone?.releaseAudioEngine(for: "Metronome")
+        if let metroDrone = metroDrone {
+            metroDrone.releaseAudioEngine(for: "Metronome")
+        } else {
+            print("⚠️ Warning: MetroDrone reference is nil, cannot release audio engine")
+        }
 
         print("Metronome stopped.")
     }
-    
-    func startDroning() {
-        isDroning = true
-        prepareBeatsBuffer()
-    }
-    
-    func stopDroning() {
-        isDroning = false
-        prepareBeatsBuffer()
+
+    func setPulsarMode(isPulsing: Bool) {
+        isDroning = isPulsing;
     }
     
     private func resampleBuffer(_ buffer: AVAudioPCMBuffer, toFormat format: AVAudioFormat) -> AVAudioPCMBuffer? {
@@ -483,13 +584,31 @@ class Metronome: ObservableObject {
                 preparedBuffers[beatIndex] = mixBuffer  ?? beatBuffer
             }
         }
-        
+
+        // Атомарная замена с синхронизацией
+        beatsBufferLock.lock()
         beatsBuffer = preparedBuffers
+        beatsBufferLock.unlock()
+
         print("BEAT BUFFER & DroneBeat BUFFER PREPARED")
     }
-    
-    var bIndex: Int = 0
-    
+
+    /// Thread-safe async buffer preparation
+    /// Always use this method instead of calling prepareBeatsBuffer() directly
+    /// to avoid blocking UI and audio threads
+    private func prepareBeatsBufferAsync() {
+        // Отменяем предыдущую задачу, если она ещё не выполнена
+        bufferPrepWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.prepareBeatsBuffer()
+        }
+        bufferPrepWorkItem = workItem
+
+        bufferPrepQueue.async(execute: workItem)
+    }
+
     // ================
     // MARK: - scheduleBeats (по аналогии с Apple)
     // ================
@@ -508,8 +627,16 @@ class Metronome: ObservableObject {
             let beatSampleTime = AVAudioFramePosition(nextBeatSampleTime)
             // Создаём AVAudioTime для точной привязки
             let playerBeatTime = AVAudioTime(sampleTime: beatSampleTime, atRate: bufferSampleRate)
-            
+
+            // Читаем буфер с синхронизацией
+            beatsBufferLock.lock()
+            guard !beatsBuffer.isEmpty else {
+                beatsBufferLock.unlock()
+                return
+            }
             let buffer = beatsBuffer[bIndex % beatsBuffer.count]
+            beatsBufferLock.unlock()
+
             bIndex += 1
             
             // Ставим буфер в очередь
@@ -624,8 +751,8 @@ class Metronome: ObservableObject {
             let shouldSound = !isSilence && (!isRest || isFirstAccentedBeat)
 
             if shouldSound {
-                let fadeInDuration = min(1024, soundFrames / 10) // Первые 10% звука или максимум 1024 фреймов
-                let fadeOutDuration = min(1024, soundFrames / 10) // Последние 10% звука или максимум 1024 фреймов
+                let fadeInDuration = min(Self.fadeFramesDuration, Int(Double(soundFrames) * Self.fadePercentage))
+                let fadeOutDuration = min(Self.fadeFramesDuration, Int(Double(soundFrames) * Self.fadePercentage))
 
                 for frame in 0..<soundFrames {
                     let targetFrameIndex = startFrame + frame
@@ -755,21 +882,83 @@ class Metronome: ObservableObject {
         return tactBuffer
     }
     
+    /// Batch configuration method for optimized buffer preparation
+    /// Call this method to set multiple parameters at once, triggering buffer regeneration only once
+    func configure(
+        bpm: Int? = nil,
+        timeSignatureNumerator: Int? = nil,
+        timeSignatureDenominator: Int? = nil,
+        tickTypes: [TickType]? = nil,
+        subdivision: Subdivision? = nil,
+        droneDurationRatio: Double? = nil,
+        isDroning: Bool? = nil
+    ) {
+        var newConfig = configuration
+
+        if let bpm = bpm {
+            newConfig.bpm = max(Self.minBPM, min(bpm, Self.maxBPM))
+            print("BPM configured to: \(newConfig.bpm)")
+        }
+
+        if let timeSignatureNumerator = timeSignatureNumerator {
+            newConfig.timeSignatureNumerator = timeSignatureNumerator
+            // Adjust tickTypes count to match new numerator
+            if timeSignatureNumerator > newConfig.tickTypes.count {
+                newConfig.tickTypes.append(contentsOf: Array(repeating: .regular, count: timeSignatureNumerator - newConfig.tickTypes.count))
+            } else if timeSignatureNumerator < newConfig.tickTypes.count {
+                newConfig.tickTypes = Array(newConfig.tickTypes.prefix(timeSignatureNumerator))
+            }
+            print("TimeSignatureNumerator configured to: \(timeSignatureNumerator)")
+        }
+
+        if let timeSignatureDenominator = timeSignatureDenominator {
+            newConfig.timeSignatureDenominator = timeSignatureDenominator
+            print("TimeSignatureDenominator configured to: \(timeSignatureDenominator)")
+        }
+
+        if let tickTypes = tickTypes {
+            newConfig.tickTypes = tickTypes
+            print("TickTypes configured to: \(tickTypes)")
+        }
+
+        if let subdivision = subdivision {
+            newConfig.subdivision = subdivision
+            print("Subdivision configured to: \(subdivision.name)")
+        }
+
+        if let droneDurationRatio = droneDurationRatio {
+            newConfig.droneDurationRatio = max(Self.minDroneDurationRatio,
+                                              min(Self.maxDroneDurationRatio, droneDurationRatio))
+            print("DroneDurationRatio configured to: \(newConfig.droneDurationRatio)")
+        }
+
+        if let isDroning = isDroning {
+            newConfig.isDroning = isDroning
+            print("IsDroning configured to: \(isDroning)")
+        }
+
+        // Update configuration atomically - this triggers didSet which handles buffer regeneration
+        if newConfig != configuration {
+            configuration = newConfig
+            print("Metronome configured - configuration updated")
+        }
+    }
+
     func setBPM(_ newBPM: Int) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.bpm = max(20, min(newBPM, 400))
+            self.bpm = max(Self.minBPM, min(newBPM, Self.maxBPM))
             print("BPM set to: \(self.bpm)")
-            if self.isPlaying {
-                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                    guard let self = self else { return }
-                    self.prepareBeatsBuffer()
-                    let beatSampleTime = AVAudioFramePosition(self.nextBeatSampleTime)
-                    let playerBeatTime = AVAudioTime(sampleTime: beatSampleTime, atRate: self.bufferSampleRate)
-
-                    self.tickPlayerNode.play(at: playerBeatTime)
-                }
-            }
+//            if self.isPlaying {
+//                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+//                    guard let self = self else { return }
+//                    self.prepareBeatsBuffer()
+//                    let beatSampleTime = AVAudioFramePosition(self.nextBeatSampleTime)
+//                    let playerBeatTime = AVAudioTime(sampleTime: beatSampleTime, atRate: self.bufferSampleRate)
+//
+//                    self.tickPlayerNode.play(at: playerBeatTime)
+//                }
+//            }
         }
     }
     
@@ -777,25 +966,23 @@ class Metronome: ObservableObject {
         do {
             // Загружаем SoundFont и первый пресет
             try renderer.loadSoundFont(named: soundType.toString(), preset: 0)
-            
+
             if let buffer = try renderer.renderToBuffer(note: note, velocity: velocity, duration: 5.0, outputFormat: mainMixerFormat) {
                 print("Set note buffer created \(soundType) \(note)! Frames: \(buffer.frameLength)")
                 self.noteBuffer = buffer
-                prepareBeatsBuffer()
             }
         } catch {
             print("Ошибка создания буфера: \(error.localizedDescription)")
         }
     }
-    
+
     func setNoteBuffer(buffer: AVAudioPCMBuffer) {
         self.noteBuffer = buffer
-        prepareBeatsBuffer()
+        self.prepareBeatsBufferAsync()
     }
     
-    func setDroneDurationRatio(_ newRation: TimeInterval) {
-        droneDurationRatio = max(0.1, min(0.99, newRation))
-        prepareBeatsBuffer()
+    func setDroneDurationRatio(_ newRatio: TimeInterval) {
+        self.droneDurationRatio = newRatio
     }
     
     func setNextTickType(tickIndex: Int) {
@@ -813,22 +1000,14 @@ class Metronome: ObservableObject {
             if let currentIndex = TickType.allCases.firstIndex(of: currentType) {
                 let nextIndex = (currentIndex + 1) % TickType.allCases.count
                 self.tickTypes[tickIndex] = TickType.allCases[nextIndex]
-
-                self.onFieldUpdated?("tickTypes", self.tickTypes.map { String(describing: $0) })
-            }
-
-            if self.isPlaying {
-                self.prepareBeatsBuffer()
+                // Note: configuration.didSet will automatically call prepareBeatsBuffer()
             }
         }
     }
     
     func setTickTypes(tickTypes: [TickType]) {
         self.tickTypes = tickTypes
-        self.onFieldUpdated?("tickTypes", tickTypes.map { String(describing: $0) })
-        if self.isPlaying {
-            self.prepareBeatsBuffer()
-        }
+        // Note: configuration.didSet will automatically call prepareBeatsBuffer()
     }
     
     func tap() {
@@ -853,10 +1032,10 @@ class Metronome: ObservableObject {
             print("Not enough taps to calculate BPM.")
         }
 
-        if metroDrone?.audioEngine.isRunning == false {
-            metroDrone?.requestAudioEngine(for: "Metronome")
+        if let metroDrone = metroDrone, metroDrone.audioEngine.isRunning == false {
+            metroDrone.requestAudioEngine(for: "Metronome")
         }
-        
+
         playTapSound()
     }
     
@@ -905,6 +1084,4 @@ class Metronome: ObservableObject {
         tapPlayerNode.play()
         print("Tap sound played.")
     }
-
-
 }

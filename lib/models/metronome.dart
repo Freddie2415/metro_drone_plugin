@@ -61,7 +61,8 @@ class Metronome {
   int _timeSignatureDenominator = 4;
   int _currentTick = 0;
   double _droneDurationRatio = 0.5;
-  List<TickType> _tickTypes = List.generate(4, (index) => TickType.accent);
+  bool _isDroning = false;
+  List<TickType> _tickTypes = List.generate(4, (index) => TickType.regular);
   Subdivision _subdivision = Subdivision(
     name: "Quarter Notes",
     description: "One quarter note per beat",
@@ -103,6 +104,8 @@ class Metronome {
   int get currentTick => _currentTick;
 
   double get droneDurationRatio => _droneDurationRatio;
+
+  bool get isDroning => _isDroning;
 
   List<TickType> get tickTypes => _tickTypes;
 
@@ -151,6 +154,29 @@ class Metronome {
 
   Future<String?> setTickTypes(List<TickType> value) async {
     return await MetronomePluginPlatform.instance.setTickTypes(value);
+  }
+
+  /// Configure multiple metronome parameters at once for optimized performance
+  /// This method triggers buffer regeneration only once instead of multiple times
+  /// when setting parameters individually
+  Future<String?> configure({
+    int? bpm,
+    int? timeSignatureNumerator,
+    int? timeSignatureDenominator,
+    List<TickType>? tickTypes,
+    Subdivision? subdivision,
+    double? droneDurationRatio,
+    bool? isDroning,
+  }) async {
+    return await MetronomePluginPlatform.instance.configure(
+      bpm: bpm,
+      timeSignatureNumerator: timeSignatureNumerator,
+      timeSignatureDenominator: timeSignatureDenominator,
+      tickTypes: tickTypes,
+      subdivision: subdivision,
+      droneDurationRatio: droneDurationRatio,
+      isDroning: isDroning,
+    );
   }
 
   /// Подписка на обновления с платформенной части через EventChannel.
@@ -243,6 +269,11 @@ class Metronome {
       if (map.containsKey("droneDurationRatio") &&
           map["droneDurationRatio"] is double) {
         _droneDurationRatio = map["droneDurationRatio"] as double;
+      }
+
+      // Обновляем поле _isDroning
+      if (map.containsKey("isDroning") && map["isDroning"] is bool) {
+        _isDroning = map["isDroning"] as bool;
       }
 
       _metronomeController.add(this);

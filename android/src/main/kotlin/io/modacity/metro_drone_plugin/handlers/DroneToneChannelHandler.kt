@@ -30,6 +30,9 @@ class DroneToneChannelHandler(private val metrodrone: Metrodrone) : MethodChanne
             "setSoundType" -> {
                 handleSetSoundType(call, result)
             }
+            "configure" -> {
+                handleConfigure(call, result)
+            }
             else -> {
                 result.notImplemented()
             }
@@ -132,6 +135,61 @@ class DroneToneChannelHandler(private val metrodrone: Metrodrone) : MethodChanne
             "organ" -> SoundType.ORGAN
             "cello" -> SoundType.CELLO
             else -> null
+        }
+    }
+
+    private fun handleConfigure(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<String, Any>
+        if (args == null) {
+            result.error("INVALID_ARGUMENTS", "Invalid argument format for configure", null)
+            return
+        }
+
+        try {
+            // Update note if provided
+            (args["note"] as? String)?.let { noteString ->
+                val note = parseNoteFromString(noteString)
+                if (note != null) {
+                    metrodrone.drone.note = note
+                } else {
+                    result.error("INVALID_ARGUMENTS", "Invalid note name: $noteString", null)
+                    return
+                }
+            }
+
+            // Update octave if provided
+            (args["octave"] as? Int)?.let { octave ->
+                metrodrone.drone.octave = Octave(octave)
+            }
+
+            // Update tuning standard if provided
+            (args["tuningStandard"] as? Double)?.let { tuningStandard ->
+                metrodrone.drone.tuning = app.metrodrone.domain.drone.models.Tuning(tuningStandard)
+            }
+
+            // Update sound type if provided
+            (args["soundType"] as? String)?.let { soundTypeString ->
+                val soundType = parseSoundTypeFromString(soundTypeString)
+                if (soundType != null) {
+                    metrodrone.drone.soundType = soundType
+                } else {
+                    result.error("INVALID_ARGUMENTS", "Invalid sound type: $soundTypeString", null)
+                    return
+                }
+            }
+
+            // Update pulsing mode if provided
+            (args["isPulsing"] as? Boolean)?.let { isPulsing ->
+                metrodrone.drone.isPulsing = isPulsing
+                if (metrodrone.drone.isPulsing) {
+                    metrodrone.stopDrone()
+                }
+                metrodrone.metronome.updatePulsarMode(isPulsing)
+            }
+
+            result.success("Drone tone configured successfully")
+        } catch (e: Exception) {
+            result.error("CONFIGURE_ERROR", "Failed to configure drone tone: ${e.message}", null)
         }
     }
 }

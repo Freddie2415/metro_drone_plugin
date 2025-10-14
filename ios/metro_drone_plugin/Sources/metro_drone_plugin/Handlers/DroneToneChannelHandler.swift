@@ -33,6 +33,7 @@ class DroneToneChannelHandler: NSObject, FlutterPlugin {
         self.methodHandlers["setNote"] = self.handleSetNote
         self.methodHandlers["setTuningStandard"] = self.handleTuningStandard
         self.methodHandlers["setSoundType"] = self.handleSetSoundType
+        self.methodHandlers["configure"] = self.handleConfigure
     }
 
     private func handleStart(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -86,5 +87,50 @@ class DroneToneChannelHandler: NSObject, FlutterPlugin {
         } else {
             result(FlutterError(code: "INVALID_ARGUMENTS", message: "isPulsing value missing", details: nil))
         }
+    }
+
+    private func handleConfigure(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any] else {
+            result(FlutterError(code: "INVALID_ARGUMENTS",
+                              message: "Invalid argument format for configure",
+                              details: nil))
+            return
+        }
+
+        var note: String? = nil
+        var octave: Int? = nil
+        var tuningStandard: Double? = nil
+        var soundType: SoundType? = nil
+        var isPulsing: Bool? = nil
+
+        if let noteValue = args["note"] as? String {
+            note = noteValue
+        }
+
+        if let octaveValue = args["octave"] as? Int {
+            octave = octaveValue
+        }
+
+        if let tuningStandardValue = args["tuningStandard"] as? Double {
+            tuningStandard = tuningStandardValue
+        }
+
+        if let soundTypeString = args["soundType"] as? String {
+            soundType = soundTypeString == "sine" ? SoundType.sine : SoundType.organ
+        }
+
+        if let isPulsingValue = args["isPulsing"] as? Bool {
+            isPulsing = isPulsingValue
+        }
+
+        self.droneTone.configure(
+            note: note,
+            octave: octave,
+            tuningStandard: tuningStandard,
+            soundType: soundType,
+            isPulsing: isPulsing
+        )
+
+        result("DroneTone configured successfully")
     }
 }

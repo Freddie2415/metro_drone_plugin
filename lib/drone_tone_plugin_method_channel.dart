@@ -66,6 +66,43 @@ class MethodChannelDroneTonePlugin extends DroneTonePluginPlatform {
   }
 
   @override
+  Future<String?> configure({
+    String? note,
+    int? octave,
+    double? tuningStandard,
+    SoundType? soundType,
+    bool? isPulsing,
+  }) async {
+    final Map<String, dynamic> args = {};
+
+    if (note != null) {
+      final String validNote = [
+        "C", "C#", "D", "D#", "E", "F",
+        "F#", "G", "G#", "A", "A#", "B",
+      ].firstWhere((e) => e == note, orElse: () => "C");
+      args['note'] = validNote;
+    }
+
+    if (octave != null) {
+      args['octave'] = min(7, max(1, octave));
+    }
+
+    if (tuningStandard != null) {
+      args['tuningStandard'] = tuningStandard;
+    }
+
+    if (soundType != null) {
+      args['soundType'] = soundType.toString();
+    }
+
+    if (isPulsing != null) {
+      args['isPulsing'] = isPulsing;
+    }
+
+    return await methodChannel.invokeMethod<String>("configure", args);
+  }
+
+  @override
   Stream<Map> get updates {
     return eventChannel.receiveBroadcastStream().map((event) => event as Map);
   }

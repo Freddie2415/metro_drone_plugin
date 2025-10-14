@@ -52,4 +52,17 @@ abstract class DroneTonePluginPlatform extends PlatformInterface {
   Future<String?> setSoundType(SoundType soundType) {
     throw UnimplementedError('setSoundType() has not been implemented.');
   }
+
+  /// Configure multiple drone tone parameters at once for optimized performance
+  /// This method triggers platform updates only once instead of multiple times
+  /// when setting parameters individually
+  Future<String?> configure({
+    String? note,
+    int? octave,
+    double? tuningStandard,
+    SoundType? soundType,
+    bool? isPulsing,
+  }) {
+    throw UnimplementedError('configure() has not been implemented.');
+  }
 }

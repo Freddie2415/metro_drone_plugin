@@ -94,6 +94,41 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
   }
 
   @override
+  Future<String?> configure({
+    int? bpm,
+    int? timeSignatureNumerator,
+    int? timeSignatureDenominator,
+    List<TickType>? tickTypes,
+    Subdivision? subdivision,
+    double? droneDurationRatio,
+    bool? isDroning,
+  }) async {
+    final Map<String, dynamic> args = {};
+
+    if (bpm != null) args['bpm'] = bpm;
+    if (timeSignatureNumerator != null) {
+      args['timeSignatureNumerator'] = timeSignatureNumerator;
+    }
+    if (timeSignatureDenominator != null) {
+      args['timeSignatureDenominator'] = timeSignatureDenominator;
+    }
+    if (tickTypes != null) {
+      args['tickTypes'] = tickTypes.map((t) => t.toString()).toList();
+    }
+    if (subdivision != null) {
+      args['subdivision'] = subdivision.toMap();
+    }
+    if (droneDurationRatio != null) {
+      args['droneDurationRatio'] = droneDurationRatio;
+    }
+    if (isDroning != null) {
+      args['isDroning'] = isDroning;
+    }
+
+    return await methodChannel.invokeMethod<String>('configure', args);
+  }
+
+  @override
   Stream<Map> get updates {
     return metronomeUpdatesEventChannel
         .receiveBroadcastStream()

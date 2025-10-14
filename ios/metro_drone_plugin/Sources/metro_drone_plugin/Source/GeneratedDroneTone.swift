@@ -12,39 +12,92 @@ import AVFoundation
 class GeneratedDroneTone2: ObservableObject {
     public var onFieldUpdated: ((String, Any) -> Void)?
 
-    // MARK: - Published Properties
-    @Published var currentNote: String = "A" {
+    // MARK: - Unified Configuration
+    @Published var configuration: DroneToneConfiguration = .default {
         didSet {
-            onFieldUpdated?("note", currentNote)
+            // Prevent redundant updates
+            guard oldValue != configuration else { return }
+
+            // Handle note/octave/tuning changes
+            if oldValue.note != configuration.note ||
+               oldValue.octave != configuration.octave ||
+               oldValue.tuningStandard != configuration.tuningStandard ||
+               oldValue.soundType != configuration.soundType {
+                updateFrequency()
+                updateMetronomeBuffer()
+            }
+
+            // Handle sound type changes
+            if oldValue.soundType != configuration.soundType {
+                // Sound type change is handled in configure method
+            }
+
+            // Handle pulsing changes
+            if oldValue.isPulsing != configuration.isPulsing {
+                handlePulsingChange()
+            }
+
+            // Notify Flutter about all changes
+            onFieldUpdated?("note", configuration.note)
+            onFieldUpdated?("octave", configuration.octave)
+            onFieldUpdated?("tuningStandard", configuration.tuningStandard)
+            onFieldUpdated?("soundType", configuration.soundType.rawValue)
+            onFieldUpdated?("isPulsing", configuration.isPulsing)
         }
     }
-    @Published var currentOctave: Int = 4 {
-        didSet {
-            onFieldUpdated?("octave", currentOctave)
+
+    // MARK: - Computed Properties (for backward compatibility)
+    var currentNote: String {
+        get { configuration.note }
+        set {
+            var newConfig = configuration
+            newConfig.note = newValue
+            configuration = newConfig
         }
     }
+
+    var currentOctave: Int {
+        get { configuration.octave }
+        set {
+            var newConfig = configuration
+            newConfig.octave = newValue
+            configuration = newConfig
+        }
+    }
+
+    var tuningStandartA: Double {
+        get { configuration.tuningStandard }
+        set {
+            var newConfig = configuration
+            newConfig.tuningStandard = newValue
+            configuration = newConfig
+        }
+    }
+
+    var soundType: SoundType {
+        get { configuration.soundType }
+        set {
+            var newConfig = configuration
+            newConfig.soundType = newValue
+            configuration = newConfig
+        }
+    }
+
+    var isPulsing: Bool {
+        get { configuration.isPulsing }
+        set {
+            var newConfig = configuration
+            newConfig.isPulsing = newValue
+            configuration = newConfig
+        }
+    }
+
+    // MARK: - Other Properties
     @Published var frequency: Double = 440.0  // Гц
-    @Published var tuningStandartA: Double = 440.0  // Гц
-    {
-        didSet {
-            onFieldUpdated?("tuningStandard", tuningStandartA)
-            setNote(note: currentNote, octave: currentOctave)
-        }
-    }
     @Published var amplitude: Float = 0.5     // От 0.0 до 1.0
     @Published var isPlaying: Bool = false {
         didSet {
             onFieldUpdated?("isPlaying", isPlaying)
-        }
-    }
-    @Published var isPulsing: Bool = false {
-        didSet {
-            onFieldUpdated?("isPulsing", isPulsing)
-        }
-    }
-    @Published var soundType: SoundType = .sine {
-        didSet {
-            onFieldUpdated?("soundType", soundType.rawValue)
         }
     }
     
@@ -75,7 +128,12 @@ class GeneratedDroneTone2: ObservableObject {
     private lazy var fadeOutPerSample: Float = Float(1.0 / (sampleRate * fadeTime))
     
     private let waveTableManager = WaveTableManager(tableSize: 4096)
-    
+
+    // MARK: - Debouncing
+    private let debounceQueue = DispatchQueue(label: "app.metronome.droneToneDebounce", qos: .userInitiated)
+    private var bufferUpdateWorkItem: DispatchWorkItem?
+    private var latestUpdateToken: UInt = 0
+
     // MARK: - Init
     init(audioEngine: AVAudioEngine, metronome: Metronome, metroDrone: MetroDrone? = nil) {
         self.engine = audioEngine
@@ -86,6 +144,8 @@ class GeneratedDroneTone2: ObservableObject {
 
     deinit {
         stopDrone()
+        bufferUpdateWorkItem?.cancel()
+        bufferUpdateWorkItem = nil
         onFieldUpdated = nil
         if let node = sourceNode {
             engine.detach(node)
@@ -311,42 +371,22 @@ class GeneratedDroneTone2: ObservableObject {
     }
     
     func setSoundType(sound: SoundType) {
-        if sound == soundType { return }
-        
-//        let wasPlaying = isPlaying
-        let wasPulsing = isPulsing
-        
-//        if wasPlaying {
-//            stopDrone()
-//        }
-        
-        if wasPulsing {
-            setPulsing(false)
-        }
-        
-        soundType = sound
-//        loadSoundFont()
+        if sound == configuration.soundType { return }
 
-//        if wasPlaying {
-//            self.startDrone()
-//        }
-        
-        if wasPulsing {
-            self.setPulsing(true)
-        }
+        let isDroning = self.metronome.isDroning;
+        self.metronome.setPulsarMode(isPulsing: !isDroning)
+
+        var newConfig = configuration
+        newConfig.soundType = sound
+        configuration = newConfig
+
+        self.metronome.setPulsarMode(isPulsing: isDroning)
     }
     
     func setPulsing(_ pulsing: Bool) {
-        isPulsing  = pulsing
-        
-        if isPulsing {
-            stopDrone()
-            let buffer = createNoteBuffer()
-            metronome.setNoteBuffer(buffer: buffer!)
-            self.metronome.startDroning()
-        }else {
-            self.metronome.stopDroning()
-        }
+        var newConfig = configuration
+        newConfig.isPulsing = pulsing
+        configuration = newConfig
     }
     
     // MARK: - Create Note Buffer
@@ -402,18 +442,126 @@ class GeneratedDroneTone2: ObservableObject {
     }
     
     func setNote(note: String, octave: Int) {
-        currentNote = note
-        currentOctave = octave
+        var newConfig = configuration
+        newConfig.note = note
+        newConfig.octave = octave
+        configuration = newConfig
+    }
 
-        frequency = MIDIHelper.frequency(note: note, octave: octave, tuningStandard: tuningStandartA)
+    /// Batch configuration method for optimized parameter setting
+    /// Call this method to set multiple parameters at once, triggering updates only once
+    func configure(
+        note: String? = nil,
+        octave: Int? = nil,
+        tuningStandard: Double? = nil,
+        soundType: SoundType? = nil,
+        isPulsing: Bool? = nil
+    ) {
+        var newConfig = configuration
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            if self.isPulsing {
-                let buffer = self.createNoteBuffer()
-                self.metronome.setNoteBuffer(buffer: buffer!)
-            }
+        if let note = note {
+            newConfig.note = note
+            print("DroneTone note configured to: \(note)")
         }
+
+        if let octave = octave {
+            newConfig.octave = octave
+            print("DroneTone octave configured to: \(octave)")
+        }
+
+        if let tuningStandard = tuningStandard {
+            newConfig.tuningStandard = tuningStandard
+            print("DroneTone tuningStandard configured to: \(tuningStandard)")
+        }
+
+        if let soundType = soundType {
+            newConfig.soundType = soundType
+            print("DroneTone soundType configured to: \(soundType)")
+        }
+
+        if let isPulsing = isPulsing {
+            newConfig.isPulsing = isPulsing
+            print("DroneTone isPulsing configured to: \(isPulsing)")
+        }
+
+        // Update configuration atomically - this triggers didSet which handles all updates
+        if newConfig != configuration {
+            configuration = newConfig
+            print("DroneTone configured - configuration updated")
+        }
+    }
+
+    // MARK: - Private Helper Methods
+
+    private func updateFrequency() {
+        frequency = MIDIHelper.frequency(
+            note: configuration.note,
+            octave: configuration.octave,
+            tuningStandard: configuration.tuningStandard
+        )
+    }
+
+    private func updateMetronomeBuffer() {
+        // 1) Инкрементируем токен версии - новое изменение
+        latestUpdateToken &+= 1
+        let token = latestUpdateToken
+
+        // 2) Отменяем предыдущую задачу (если она ещё не началась)
+        bufferUpdateWorkItem?.cancel()
+
+        // 3) Создаём новую задачу с дебаунсингом (50ms)
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+
+            // ПРОВЕРКА 1: Актуален ли токен версии?
+            guard token == self.latestUpdateToken else {
+                print("⚠️ updateMetronomeBuffer: token устарел (\(token) != \(self.latestUpdateToken))")
+                return
+            }
+
+            // ПРОВЕРКА 2: Включен ли пульсирующий режим?
+            guard self.configuration.isPulsing else {
+                print("⚠️ updateMetronomeBuffer: isPulsing = false, пропускаем генерацию")
+                return
+            }
+
+            print("✅ updateMetronomeBuffer: начинаем генерацию буфера (token: \(token))")
+
+            // Тяжёлая операция - генерация 3-секундного буфера
+            guard let buffer = self.createNoteBuffer() else {
+                print("⚠️ updateMetronomeBuffer: не удалось создать буфер")
+                return
+            }
+
+            // ПРОВЕРКА 3: Токен всё ещё актуален после генерации?
+            guard token == self.latestUpdateToken else {
+                print("⚠️ updateMetronomeBuffer: token устарел после генерации (\(token) != \(self.latestUpdateToken))")
+                return
+            }
+
+            // ПРОВЕРКА 4: Пульсирующий режим всё ещё включен?
+            guard self.configuration.isPulsing else {
+                print("⚠️ updateMetronomeBuffer: isPulsing выключен во время генерации")
+                return
+            }
+
+            print("✅ updateMetronomeBuffer: отправляем буфер в метроном (token: \(token))")
+            self.metronome.setNoteBuffer(buffer: buffer)
+        }
+
+        // Сохраняем текущий workItem для проверки по идентичности (===)
+        bufferUpdateWorkItem = workItem
+
+        // 4) Запускаем на SERIAL queue с дебаунсингом 50ms
+        debounceQueue.asyncAfter(deadline: .now() + 0.05, execute: workItem)
+    }
+
+    private func handlePulsingChange() {
+        if configuration.isPulsing {
+            stopDrone()
+            updateMetronomeBuffer()
+        }
+        metronome.setPulsarMode(isPulsing: configuration.isPulsing)
     }
 }
 

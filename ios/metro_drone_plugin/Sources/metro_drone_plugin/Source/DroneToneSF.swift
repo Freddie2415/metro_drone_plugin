@@ -109,10 +109,8 @@ class DroneToneSF: ObservableObject {
         if isPulsing {
             stopDrone()
             self.metronome.setNoteBuffer(soundType: soundType, note: currentNote)
-            self.metronome.startDroning()
-        }else {
-            self.metronome.stopDroning()
         }
+        self.metronome.setPulsarMode(isPulsing: isPulsing)
     }
     
     func setNote(note: String, octave: Int) {

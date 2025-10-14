@@ -75,6 +75,25 @@ class DroneTone {
     return await DroneTonePluginPlatform.instance.setSoundType(soundType);
   }
 
+  /// Configure multiple drone tone parameters at once for optimized performance
+  /// This method triggers platform updates only once instead of multiple times
+  /// when setting parameters individually
+  Future<String?> configure({
+    String? note,
+    int? octave,
+    double? tuningStandard,
+    SoundType? soundType,
+    bool? isPulsing,
+  }) async {
+    return await DroneTonePluginPlatform.instance.configure(
+      note: note,
+      octave: octave,
+      tuningStandard: tuningStandard,
+      soundType: soundType,
+      isPulsing: isPulsing,
+    );
+  }
+
   void listenToUpdates() {
     DroneTonePluginPlatform.instance.updates.listen(onDataChanged);
   }

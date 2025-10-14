@@ -71,6 +71,18 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
     throw UnimplementedError('setTickTypes() has not been implemented.');
   }
 
+  Future<String?> configure({
+    int? bpm,
+    int? timeSignatureNumerator,
+    int? timeSignatureDenominator,
+    List<TickType>? tickTypes,
+    Subdivision? subdivision,
+    double? droneDurationRatio,
+    bool? isDroning,
+  }) {
+    throw UnimplementedError('configure() has not been implemented.');
+  }
+
   Stream<Map> get updates => throw UnimplementedError();
 
   Stream<int> get tickStream => throw UnimplementedError();
