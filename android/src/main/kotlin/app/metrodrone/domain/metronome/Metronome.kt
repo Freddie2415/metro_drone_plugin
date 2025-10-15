@@ -130,7 +130,7 @@ class Metronome(
                 beats + List(diff) {
                     Beat(
                         parts = subdivision.parts,
-                        accent = SoundAccent.ACCENT
+                        accent = SoundAccent.DEFAULT
                     )
                 }
             }
