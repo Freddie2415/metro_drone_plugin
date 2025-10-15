@@ -61,7 +61,7 @@ class TunerEngine {
             val freq = res.pitch
             val prob = res.probability
 
-            if (freq > 0f && prob >= 0.8f) {
+            if (freq > 20f && prob >= 0.8f) {
                 val (noteName, cents) = toNoteAndCents(freq.toDouble(), tuningA)
                 onUpdate(
                     Result(
