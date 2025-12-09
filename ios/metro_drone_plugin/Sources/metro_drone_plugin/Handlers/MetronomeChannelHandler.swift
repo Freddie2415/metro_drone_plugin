@@ -31,6 +31,7 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
         self.methodHandlers["start"] = self.handleStart
         self.methodHandlers["stop"] = self.handleStop
         self.methodHandlers["tap"] = self.handleTap
+        self.methodHandlers["prepareAudioEngine"] = self.handlePrepareAudioEngine
         self.methodHandlers["setBpm"] = self.handleSetBpm
         self.methodHandlers["setSubdivision"] = self.handleSetSubdivision
         self.methodHandlers["setTimeSignatureNumerator"] = self.handleSetTimeSignatureNumerator
@@ -58,6 +59,11 @@ class MetronomeChannelHandler: NSObject, FlutterPlugin {
     private func handleTap(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         self.metronome.tap()
         result("tap")
+    }
+
+    private func handlePrepareAudioEngine(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        self.metronome.prepareAudioEngine()
+        result("Audio engine prepared")
     }
 
     private func handleSetBpm(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

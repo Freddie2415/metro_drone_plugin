@@ -32,6 +32,10 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
                 handleTap(call, result)
             }
 
+            "prepareAudioEngine" -> {
+                handlePrepareAudioEngine(call, result)
+            }
+
             "setBpm" -> {
                 handleSetBpm(call, result)
             }
@@ -92,6 +96,15 @@ class MetronomeChannelHandler(private val metrodrone: Metrodrone) :
     private fun handleTap(call: MethodCall, result: MethodChannel.Result) {
         metrodrone.metronome.tap()
         result.success("tap")
+    }
+
+    private fun handlePrepareAudioEngine(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            metrodrone.prepareAudioEngine()
+            result.success("Audio engine prepared")
+        } catch (e: Exception) {
+            result.error("PREPARE_ERROR", "Failed to prepare audio engine: ${e.message}", null)
+        }
     }
 
     private fun handleSetBpm(call: MethodCall, result: MethodChannel.Result) {

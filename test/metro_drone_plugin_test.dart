@@ -85,6 +85,12 @@ class MockMetroDronePluginPlatform
     // TODO: implement configure
     throw UnimplementedError();
   }
+
+  @override
+  Future<String?> prepareAudioEngine() {
+    // TODO: implement prepareAudioEngine
+    throw UnimplementedError();
+  }
 }
 
 void main() {

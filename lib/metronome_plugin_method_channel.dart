@@ -38,6 +38,11 @@ class MethodChannelMetronomePlugin extends MetronomePluginPlatform {
   }
 
   @override
+  Future<String?> prepareAudioEngine() async {
+    return await methodChannel.invokeMethod<String>("prepareAudioEngine");
+  }
+
+  @override
   Future<String?> setBpm(int bpm) async {
     return await methodChannel.invokeMethod<String>(
       'setBpm',

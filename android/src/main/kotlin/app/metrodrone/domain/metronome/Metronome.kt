@@ -175,7 +175,7 @@ class Metronome(
     }
 
     fun tap() {
-        soundPool.play(tapSoundId, 1.0f, 1.0f, 0, 0, 1.0f)
+        // soundPool.play(tapSoundId, 1.0f, 1.0f, 0, 0, 1.0f) // Removed: tap sound causes delay. Using haptic feedback only for instant response.
         clicker.addTapAndCalcBpm()?.let { newBpm ->
             val valueToSet = min(newBpm, Bpm.MAX)
             updateBpm(valueToSet)

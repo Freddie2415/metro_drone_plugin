@@ -40,6 +40,10 @@ abstract class MetronomePluginPlatform extends PlatformInterface {
     throw UnimplementedError('tap() has not been implemented.');
   }
 
+  Future<String?> prepareAudioEngine() {
+    throw UnimplementedError('prepareAudioEngine() has not been implemented.');
+  }
+
   Future<String?> setBpm(int bpm) {
     throw UnimplementedError('setBpm() has not been implemented.');
   }

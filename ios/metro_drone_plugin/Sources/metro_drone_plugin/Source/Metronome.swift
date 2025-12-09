@@ -1036,9 +1036,19 @@ class Metronome: ObservableObject {
             metroDrone.requestAudioEngine(for: "Metronome")
         }
 
-        playTapSound()
+        // playTapSound() // Removed: tap sound causes ~300ms delay. Using haptic feedback only for instant response.
     }
-    
+
+    func prepareAudioEngine() {
+        guard let metroDrone = metroDrone else {
+            print("⚠️ Warning: MetroDrone reference is nil, cannot prepare audio engine")
+            return
+        }
+
+        metroDrone.requestAudioEngine(for: "Metronome")
+        print("✅ Audio engine prewarmed for metronome and tap tempo")
+    }
+
     func mixAudioBuffers(buffer1: AVAudioPCMBuffer, buffer2: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
         guard buffer1.format == buffer2.format else {
             print("Buffers must have the same format to mix.")

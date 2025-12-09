@@ -124,6 +124,10 @@ class Metronome {
     return await MetronomePluginPlatform.instance.tap();
   }
 
+  Future<String?> prepareAudioEngine() async {
+    return await MetronomePluginPlatform.instance.prepareAudioEngine();
+  }
+
   Future<String?> setBpm(int value) async {
     return await MetronomePluginPlatform.instance.setBpm(value);
   }

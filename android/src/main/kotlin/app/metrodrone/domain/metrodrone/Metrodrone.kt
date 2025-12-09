@@ -26,6 +26,10 @@ class Metrodrone(
         metronome.stop()
     }
 
+    fun prepareAudioEngine() {
+        metronomeSoundPlayer.warmUp()
+    }
+
     fun startDrone() {
         droneSoundPlayer.reset()
         drone.start { samples ->
