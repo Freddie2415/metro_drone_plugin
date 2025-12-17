@@ -93,8 +93,8 @@ class GeneratedDroneTone2: ObservableObject {
     }
 
     // MARK: - Other Properties
-    @Published var frequency: Double = 440.0  // Гц
-    @Published var amplitude: Float = 0.5     // От 0.0 до 1.0
+    @Published var frequency: Double = 440.0  // Hz
+    @Published var amplitude: Float = 0.5     // From 0.0 to 1.0
     @Published var isPlaying: Bool = false {
         didSet {
             onFieldUpdated?("isPlaying", isPlaying)
@@ -109,21 +109,21 @@ class GeneratedDroneTone2: ObservableObject {
     
     // MARK: - Sample Rate
     private let sampleRate: Double = 44_100
-    private let bufferDuration: Double = 3.0 // 3 секунды
+    private let bufferDuration: Double = 3.0 // 3 seconds
     
     // MARK: - Phases
-    // Отдельные фазы для каждого типа звука
+    // Separate phases for each sound type
     private var phaseSine:  Double = 0.0
-    private var phaseOrgan: [Double] = [0.0, 0.0, 0.0, 0.0] // для 4 гармоник
+    private var phaseOrgan: [Double] = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
     private var phaseCello: Double = 0.0
-    
-    // Чтобы сгладить громкость при старте/остановке
-    // Простая огибающая: fadeIn/fadeOut
+
+    // To smooth volume during start/stop
+    // Simple envelope: fadeIn/fadeOut
     private var currentAmplitudeScale: Float = 0.0
-    
-    // Сколько секунд уходит на fade-in/out
+
+    // Fade-in/out duration in seconds
     private let fadeTime: Double = 0.02
-    // На сколько увеличивать/уменьшать громкость за сэмпл при старте/остановке
+    // How much to increase/decrease volume per sample during start/stop
     private lazy var fadeInPerSample:  Float = Float(1.0 / (sampleRate * fadeTime))
     private lazy var fadeOutPerSample: Float = Float(1.0 / (sampleRate * fadeTime))
     
@@ -174,15 +174,15 @@ class GeneratedDroneTone2: ObservableObject {
                 case .sine:
                     sampleValue = self.generateSineSample()
                 case .organ:
-                    sampleValue = self.generateOrganSample(phaseOrgan: &phaseOrgan)
+                    sampleValue = self.generateOrganSample()
 //                case .cello:
 //                    sampleValue = self.generateCelloSample()
                 }
-                
-                // Применяем простую огибающую (fade in/out) к результирующему сэмплу
+
+                // Apply simple envelope (fade in/out) to the resulting sample
                 let finalSample = sampleValue * self.applyFadeEnvelope()
-                
-                // Записываем finalSample в оба канала
+
+                // Write finalSample to both channels
                 for channel in 0..<Int(audioFormat.channelCount) {
                     let buffer = ablPointer[channel].mData?.assumingMemoryBound(to: Float.self)
                     buffer?[frame] = finalSample
@@ -199,8 +199,8 @@ class GeneratedDroneTone2: ObservableObject {
     }
     
     // MARK: - Generators
-    
-    /// 1. Sine Wave — непрерывная фаза
+
+    /// 1. Sine Wave — continuous phase
     private func generateSineSample() -> Float {
         let phaseIncrement = 2.0 * .pi * frequency / sampleRate
         
@@ -214,94 +214,94 @@ class GeneratedDroneTone2: ObservableObject {
         return sample
     }
     
-    /// 2. Organ (аддитивный синтез). У каждой гармоники своя фаза
-    private func generateOrganSample(phaseOrgan: inout [Double]) -> Float {
-        // Множители частоты для гармоник
+    /// 2. Organ (additive synthesis). Each harmonic has its own phase
+    private func generateOrganSample() -> Float {
+        // Frequency multipliers for harmonics
         let harmonics = [1.0, 2.0, 3.0, 4.0]
-        // Относительные амплитуды
+        // Relative amplitudes
         let amplitudes: [Float] = [1.0, 0.5, 0.25, 0.125]
-        
+
         var sample: Float = 0.0
-        
-        // Для каждой гармоники своя фаза
+
+        // Each harmonic has its own phase
         for i in 0..<harmonics.count {
             let harmFreq  = frequency * harmonics[i]
             let increment = 2.0 * .pi * harmFreq / sampleRate
-            
-            // Генерируем текущий сэмпл гармоники
+
+            // Generate current harmonic sample
             let harmSample = sin(phaseOrgan[i]) * Double(amplitudes[i])
             sample += Float(harmSample) * amplitude
-            
-            // Обновляем фазу
+
+            // Update phase
             phaseOrgan[i] += increment
             if phaseOrgan[i] > 2.0 * .pi {
                 phaseOrgan[i] -= 2.0 * .pi
             }
         }
-        
-        // Чтобы избежать клиппинга
+
+        // Avoid clipping
         return max(min(sample, 1.0), -1.0)
     }
     
-    /// 3. Cello — пилообразная волна + вибрато + тремоло, непрерывная фаза
+    /// 3. Cello — sawtooth wave + vibrato + tremolo, continuous phase
     private func generateCelloSample() -> Float {
-        // --- Параметры вибрато
-        let vibratoRate: Double = 5.0     // Частота вибрато (Гц)
-        let vibratoDepth: Double = 0.01   // Глубина вибрато (изменение частоты)
-        
-        // --- Параметры тремоло
+        // --- Vibrato parameters
+        let vibratoRate: Double = 5.0     // Vibrato frequency (Hz)
+        let vibratoDepth: Double = 0.01   // Vibrato depth (frequency variation)
+
+        // --- Tremolo parameters
         let tremoloRate: Double = 3.0
         let tremoloDepth: Double = 0.2
-        
-        // Генерируем вибрато
+
+        // Generate vibrato
         let incrementBase = 2.0 * .pi * frequency / sampleRate
-        // "Временной" шаг для фазы: здесь phaseCello меняется равномерно, без скачков
-        // Но добавим корректировку частоты на vibratoDepth:
-        
-        // vibratoValue: колеблется в диапазоне [-vibratoDepth, +vibratoDepth]
+        // "Time" step for phase: here phaseCello changes uniformly, without jumps
+        // But we add frequency correction by vibratoDepth:
+
+        // vibratoValue: oscillates in range [-vibratoDepth, +vibratoDepth]
         let vibratoValue = sin(phaseCello * (vibratoRate / frequency)) * vibratoDepth
         // => effectiveFrequency = frequency * (1 + vibratoValue)
-        // => эффективный приращение фазы ~ incrementBase * (1 + vibratoValue)
-        
-        // Обновим фазу p:
+        // => effective phase increment ~ incrementBase * (1 + vibratoValue)
+
+        // Update phase:
         let actualIncrement = incrementBase * (1.0 + vibratoValue)
         phaseCello += actualIncrement
         if phaseCello > 2.0 * .pi {
             phaseCello -= 2.0 * .pi
         }
-        
-        // Пилообразная волна на основе phaseCello
-        // Переводим phaseCello в диапазон [0..1]:
+
+        // Sawtooth wave based on phaseCello
+        // Convert phaseCello to range [0..1]:
         let fraction = phaseCello / (2.0 * .pi)
         var sawWave = 2.0 * (fraction - floor(fraction + 0.5))
-        
-        // Сглаживаем пилообразную волну
+
+        // Smooth the sawtooth wave
         sawWave *= 0.8
-        
-        // Тремоло = амплитудная модуляция
-        // Используем phaseCello как "молодшего" времени?
-        // Предположим, сделаем отдельную "фазу" для тремоло, но можно упростить
-        let tremPhase = (phaseCello * (tremoloRate / vibratoRate)) // соотношение частот
+
+        // Tremolo = amplitude modulation
+        // Use phaseCello as "time" reference
+        // We'll create a separate "phase" for tremolo, but can simplify
+        let tremPhase = (phaseCello * (tremoloRate / vibratoRate)) // frequency ratio
         let tremValue = 1.0 - (sin(tremPhase) * tremoloDepth)
-        
-        // Доп. гармоники (1-я, 2-я, 3-я)
-        // Можно "притянуть" их к той же фазе, но умножить phaseCello на 2, 3...
+
+        // Additional harmonics (1st, 2nd, 3rd)
+        // Can "tie" them to the same phase, but multiply phaseCello by 2, 3...
         let harmonic1 = sin(phaseCello) * 0.3
         let harmonic2 = sin(2.0 * phaseCello) * 0.2
         let harmonic3 = sin(3.0 * phaseCello) * 0.1
-        
+
         let total = (sawWave + harmonic1 + harmonic2 + harmonic3) * Double(tremValue)
-        
+
         let sample = Float(total) * amplitude
         return max(min(sample, 1.0), -1.0)
     }
     
     // MARK: - Fade Envelope
-    
-    /// Простая «огибающая» для плавного старта/остановки
+
+    /// Simple "envelope" for smooth start/stop
     private func applyFadeEnvelope() -> Float {
-        // Если дрон играется — стараемся выйти на 1.0
-        // Если дрон остановлен — идём к 0.0
+        // If drone is playing — try to reach 1.0
+        // If drone is stopped — go to 0.0
         if isPlaying {
             if currentAmplitudeScale < 1.0 {
                 currentAmplitudeScale += fadeInPerSample
@@ -328,11 +328,11 @@ class GeneratedDroneTone2: ObservableObject {
         metroDrone?.requestAudioEngine(for: "GeneratedDroneTone")
 
         phaseSine = 0.0
-        phaseOrgan = [0.0, 0.0, 0.0, 0.0] // для 4 гармоник
+        phaseOrgan = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
         phaseCello = 0.0
-        // Готовимся к плавному fade-in
-        // currentAmplitudeScale может быть > 0, если только что было выключено
-        // но мы перезапускаем, допустим с 0.0
+        // Prepare for smooth fade-in
+        // currentAmplitudeScale may be > 0 if just stopped
+        // but we restart from 0.0
         currentAmplitudeScale = 0.0
 
         isPlaying = true
@@ -342,27 +342,27 @@ class GeneratedDroneTone2: ObservableObject {
     func stopDrone() {
         guard isPlaying else { return }
 
-        // Переводим флаг в false => applyFadeEnvelope() начнёт уменьшать currentAmplitudeScale
+        // Set flag to false => applyFadeEnvelope() will start decreasing currentAmplitudeScale
         isPlaying = false
 
-        // Не обнуляем фазы сразу, не сбрасываем volume!
-        // Ждём в фоновом потоке, пока громкость дойдёт до нуля
+        // Don't reset phases immediately, don't reset volume!
+        // Wait in background thread until volume reaches zero
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            // Ждём, пока плавный фейд-аут завершится
+            // Wait until smooth fade-out completes
             while self.currentAmplitudeScale > 0.0 {
-                // небольшой «сна» в микросекундах, чтобы не грузить процессор вхолостую
-                usleep(2000) // 2ms, например
+                // Small sleep in microseconds to avoid wasting CPU cycles
+                usleep(2000) // 2ms, for example
             }
 
-            // Когда currentAmplitudeScale == 0, можно останавливать движок
-            // и/или сбрасывать фазы
+            // When currentAmplitudeScale == 0, we can stop the engine
+            // and/or reset phases
             self.phaseSine = 0.0
             self.phaseOrgan = [0.0, 0.0, 0.0, 0.0]
             self.phaseCello = 0.0
 
-            // Если хотите именно остановить engine:
+            // If you want to stop the engine:
             self.sourceNode?.volume = 0.0
             self.metroDrone?.releaseAudioEngine(for: "GeneratedDroneTone")
         }
@@ -402,7 +402,7 @@ class GeneratedDroneTone2: ObservableObject {
         let channelCount = Int(format.channelCount)
         let tableSize = Float(waveTableManager.tableSize)
         
-        // Выбираем базовую wave-таблицу
+        // Select base wave table
         let waveTable: [Float]
         switch soundType {
         case .sine:
@@ -410,27 +410,27 @@ class GeneratedDroneTone2: ObservableObject {
         case .organ:
             waveTable = waveTableManager.organTable
         }
-        // Для индекса в таблице
+        // For table index
         var phaseIndex: Float = 0.0
-        
-        // Маска (если размер таблицы — степ. двойки)
+
+        // Mask (if table size is power of 2)
         let mask = waveTableManager.tableSize - 1
         
         for channel in 0..<channelCount {
             guard let bufferPointer = buffer.floatChannelData?[channel] else { continue }
             
             for frame in 0..<Int(frameCount) {
-                // На основе effectiveFreq вычисляем шаг по таблице
+                // Based on effectiveFreq, calculate table step
                 let increment = Float(frequency) * tableSize / Float(sampleRate)
-                
-                // Чтение из таблицы
+
+                // Read from table
                 let idx = Int(phaseIndex) & mask
                 var sampleValue = waveTable[idx]
-                
+
                 sampleValue *= amplitude
                 bufferPointer[frame] = sampleValue
-                
-                // Обновляем фазу в таблице
+
+                // Update phase in table
                 phaseIndex += increment
                 if phaseIndex >= tableSize {
                     phaseIndex -= tableSize
@@ -502,57 +502,57 @@ class GeneratedDroneTone2: ObservableObject {
     }
 
     private func updateMetronomeBuffer() {
-        // 1) Инкрементируем токен версии - новое изменение
+        // 1) Increment version token - new change
         latestUpdateToken &+= 1
         let token = latestUpdateToken
 
-        // 2) Отменяем предыдущую задачу (если она ещё не началась)
+        // 2) Cancel previous task (if it hasn't started yet)
         bufferUpdateWorkItem?.cancel()
 
-        // 3) Создаём новую задачу с дебаунсингом (50ms)
+        // 3) Create new task with debouncing (50ms)
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
 
-            // ПРОВЕРКА 1: Актуален ли токен версии?
+            // CHECK 1: Is version token current?
             guard token == self.latestUpdateToken else {
-                print("⚠️ updateMetronomeBuffer: token устарел (\(token) != \(self.latestUpdateToken))")
+                print("⚠️ updateMetronomeBuffer: token is outdated (\(token) != \(self.latestUpdateToken))")
                 return
             }
 
-            // ПРОВЕРКА 2: Включен ли пульсирующий режим?
+            // CHECK 2: Is pulsing mode enabled?
             guard self.configuration.isPulsing else {
-                print("⚠️ updateMetronomeBuffer: isPulsing = false, пропускаем генерацию")
+                print("⚠️ updateMetronomeBuffer: isPulsing = false, skipping generation")
                 return
             }
 
-            print("✅ updateMetronomeBuffer: начинаем генерацию буфера (token: \(token))")
+            print("✅ updateMetronomeBuffer: starting buffer generation (token: \(token))")
 
-            // Тяжёлая операция - генерация 3-секундного буфера
+            // Heavy operation - generating 3-second buffer
             guard let buffer = self.createNoteBuffer() else {
-                print("⚠️ updateMetronomeBuffer: не удалось создать буфер")
+                print("⚠️ updateMetronomeBuffer: failed to create buffer")
                 return
             }
 
-            // ПРОВЕРКА 3: Токен всё ещё актуален после генерации?
+            // CHECK 3: Is token still current after generation?
             guard token == self.latestUpdateToken else {
-                print("⚠️ updateMetronomeBuffer: token устарел после генерации (\(token) != \(self.latestUpdateToken))")
+                print("⚠️ updateMetronomeBuffer: token is outdated after generation (\(token) != \(self.latestUpdateToken))")
                 return
             }
 
-            // ПРОВЕРКА 4: Пульсирующий режим всё ещё включен?
+            // CHECK 4: Is pulsing mode still enabled?
             guard self.configuration.isPulsing else {
-                print("⚠️ updateMetronomeBuffer: isPulsing выключен во время генерации")
+                print("⚠️ updateMetronomeBuffer: isPulsing disabled during generation")
                 return
             }
 
-            print("✅ updateMetronomeBuffer: отправляем буфер в метроном (token: \(token))")
+            print("✅ updateMetronomeBuffer: sending buffer to metronome (token: \(token))")
             self.metronome.setNoteBuffer(buffer: buffer)
         }
 
-        // Сохраняем текущий workItem для проверки по идентичности (===)
+        // Save current workItem for identity check (===)
         bufferUpdateWorkItem = workItem
 
-        // 4) Запускаем на SERIAL queue с дебаунсингом 50ms
+        // 4) Run on SERIAL queue with 50ms debouncing
         debounceQueue.asyncAfter(deadline: .now() + 0.05, execute: workItem)
     }
 
@@ -566,23 +566,23 @@ class GeneratedDroneTone2: ObservableObject {
 }
 
 
-/// Храним таблицы (по одному периоду на волну)
+/// Store tables (one period per wave)
 struct WaveTableManager {
     let tableSize: Int
     let sineTable:  [Float]
     let organTable: [Float]
     let celloTable: [Float]
-    
+
     init(tableSize: Int = 4096) {
         self.tableSize  = tableSize
         self.sineTable  = Self.generateSineTable(tableSize: tableSize)
         self.organTable = Self.generateOrganTable(tableSize: tableSize)
         self.celloTable = Self.generateCelloTable(tableSize: tableSize)
     }
-    
-    // MARK: - Генераторы таблиц
-    
-    /// 1. Простая синусоида
+
+    // MARK: - Table Generators
+
+    /// 1. Simple sine wave
     private static func generateSineTable(tableSize: Int) -> [Float] {
         (0..<tableSize).map { i in
             let phase = 2.0 * .pi * Double(i) / Double(tableSize)
@@ -590,13 +590,13 @@ struct WaveTableManager {
         }
     }
     
-    /// 2. Organ (4 гармоники)
+    /// 2. Organ (4 harmonics)
     private static func generateOrganTable(tableSize: Int) -> [Float] {
         let amplitudes: [Double] = [1.0, 0.5, 0.25, 0.125]
         let harmonics:  [Double] = [1.0, 2.0, 3.0, 4.0]
-        
+
         var table = [Float](repeating: 0.0, count: tableSize)
-        
+
         for i in 0..<tableSize {
             let basePhase = 2.0 * .pi * Double(i) / Double(tableSize)
             var sum: Double = 0.0
@@ -605,46 +605,46 @@ struct WaveTableManager {
             }
             table[i] = Float(sum)
         }
-        
-        // Нормализуем (чтобы максимум был <= 1.0)
+
+        // Normalize (so maximum is <= 1.0)
         if let maxVal = table.map({ abs($0) }).max(), maxVal > 0.0001 {
             for k in 0..<tableSize {
                 table[k] /= maxVal
             }
         }
-        
+
         return table
     }
     
-    /// 3. Cello — базовая «пилообразная» + гармоники
-    ///    (Без тремоло/вибрато — их добавим при чтении таблицы)
+    /// 3. Cello — basic sawtooth + harmonics
+    ///    (Without tremolo/vibrato — we'll add them when reading the table)
     private static func generateCelloTable(tableSize: Int) -> [Float] {
         var table = [Float](repeating: 0.0, count: tableSize)
-        
+
         for i in 0..<tableSize {
-            // Пилообразная волна
+            // Sawtooth wave
             let fraction = Double(i) / Double(tableSize)
             var saw = 2.0 * (fraction - floor(fraction + 0.5))
-            // ослабим пилу, чтобы гармоники сильнее влияли
+            // Weaken the saw so harmonics have more influence
             saw *= 0.8
-            
-            // добавим простые гармоники
+
+            // Add simple harmonics
             let phase = 2.0 * .pi * fraction
             let h1 = 0.3 * sin(phase)
             let h2 = 0.2 * sin(2.0 * phase)
             let h3 = 0.1 * sin(3.0 * phase)
-            
+
             let total = saw + h1 + h2 + h3
             table[i] = Float(total)
         }
-        
-        // Нормализация
+
+        // Normalization
         if let maxVal = table.map({ abs($0) }).max(), maxVal > 0.0001 {
             for k in 0..<tableSize {
                 table[k] /= maxVal
             }
         }
-        
+
         return table
     }
 }

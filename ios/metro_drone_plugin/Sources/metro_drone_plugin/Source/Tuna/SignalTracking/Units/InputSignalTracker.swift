@@ -55,24 +55,8 @@ class InputSignalTracker: SignalTracker {
             isAudioSetup = true
         }
 
-        #if os(iOS)
-        try session.setCategory(.playAndRecord)
-
-        // check input type
-        let outputs = session.currentRoute.outputs
-        if !outputs.isEmpty {
-            for output in outputs {
-                switch output.portType {
-                case .headphones:
-                    // input from default (headphones)
-                    try session.overrideOutputAudioPort(.none)
-                default:
-                    // input from speaker if port is not headphones
-                    try session.overrideOutputAudioPort(.speaker)
-                }
-            }
-        }
-        #endif
+        // Audio session is now managed by AudioSessionManager
+        // No need to configure it here
 
         audioEngine = AVAudioEngine()
 

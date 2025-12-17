@@ -29,12 +29,17 @@ class Tuner: ObservableObject, PitchEngineDelegate {
     }
 
     func start() {
+        // Switch to measurement mode for accurate pitch detection
+        // This only changes the mode, not the category - Flutter recording continues!
+        AudioSessionManager.shared.enableTunerMode()
         pitchEngine?.levelThreshold = -30
         pitchEngine?.start()
     }
 
     func stop() {
         pitchEngine?.stop()
+        // Switch back to default mode - Flutter recording continues!
+        AudioSessionManager.shared.disableTunerMode()
         reset()
     }
 
@@ -72,17 +77,4 @@ class Tuner: ObservableObject, PitchEngineDelegate {
             "closestOffsetCents": self.centsOff,
         ])
     }
-    
-    private func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .allowBluetooth, .defaultToSpeaker])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            try session.setPreferredSampleRate(44100) // Убедитесь, что используется 44,100 Гц
-            print("Audio session configured successfully.")
-        } catch {
-            print("Ошибка настройки AVAudioSession: \(error.localizedDescription)")
-        }
-    }
-
 }

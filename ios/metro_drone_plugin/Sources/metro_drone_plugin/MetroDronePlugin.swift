@@ -6,6 +6,10 @@ public class MetroDronePlugin: NSObject, FlutterPlugin {
     static let tuner = Tuner()
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+        // Configure audio session once for the entire app
+        // This enables Flutter recording + plugin playback/tuner + external music
+        AudioSessionManager.shared.configureOnce()
+
         MetronomeChannelHandler.register(with: registrar)
         DroneToneChannelHandler.register(with: registrar)
         TunerChannelHandler.register(with: registrar)

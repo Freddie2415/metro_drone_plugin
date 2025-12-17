@@ -22,8 +22,6 @@ class MetroDrone {
 
         metronome.setMetroDroneReference(self)
         generatedDroneTone.setMetroDroneReference(self)
-
-        configureAudioSession()
     }
 
     // MARK: - Centralized Audio Engine Management
@@ -69,25 +67,6 @@ class MetroDrone {
         audioEngine.stop()
         print("MetroDrone Audio engine stopped - no active components.")
     }
-
-    func configureAudioSession() {
-        do {
-            // Получаем экземпляр аудиосессии
-            let audioSession = AVAudioSession.sharedInstance()
-
-            // Устанавливаем категорию для воспроизведения звука
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            print("setCategory")
-            // Активируем аудиосессию
-            try audioSession.setActive(true)
-            print("setActive")
-
-            print("Аудиосессия настроена и активирована.")
-        } catch {
-            print("Ошибка настройки аудиосессии: \(error.localizedDescription)")
-        }
-    }
-
 
     deinit {
         audioQueue.sync {
