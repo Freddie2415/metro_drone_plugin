@@ -22,6 +22,107 @@ class MetroDrone {
 
         metronome.setMetroDroneReference(self)
         generatedDroneTone.setMetroDroneReference(self)
+
+        // Subscribe to audio route change notifications (headphones connect/disconnect)
+        setupRouteChangeNotification()
+    }
+
+    // MARK: - Audio Route Change Handling
+    private func setupRouteChangeNotification() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+        print("MetroDrone: Subscribed to audio route change notifications")
+    }
+
+    @objc private func handleRouteChange(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            return
+        }
+
+        print("MetroDrone: Audio route changed, reason: \(reason.rawValue)")
+
+        switch reason {
+        case .newDeviceAvailable:
+            // New device connected (headphones, Bluetooth, etc.)
+            print("MetroDrone: New audio device connected (headphones plugged in)")
+            restartAudioEngineIfNeeded()
+
+        case .oldDeviceUnavailable:
+            // Device disconnected (headphones unplugged, etc.)
+            print("MetroDrone: Audio device disconnected (headphones unplugged)")
+            restartAudioEngineIfNeeded()
+
+        default:
+            // Ignore other reasons (categoryChange, override, etc.)
+            print("MetroDrone: Ignoring route change reason: \(reason.rawValue)")
+            break
+        }
+    }
+
+    private func restartAudioEngineIfNeeded() {
+        // Save state BEFORE any changes
+        let metronomeWasPlaying = metronome.isPlaying
+        let droneWasPlaying = generatedDroneTone.isPlaying
+
+        // Only restart if something was playing
+        guard metronomeWasPlaying || droneWasPlaying else {
+            print("MetroDrone: Nothing playing, skipping engine restart")
+            return
+        }
+
+        print("MetroDrone: Handling audio route change. Metronome: \(metronomeWasPlaying), Drone: \(droneWasPlaying), Engine running: \(audioEngine.isRunning)")
+
+        // Stop components directly without going through releaseAudioEngine
+        if metronomeWasPlaying {
+            metronome.isPlaying = false
+            metronome.tickPlayerNode.stop()
+            print("MetroDrone: Stopped metronome player node")
+        }
+
+        if droneWasPlaying {
+            generatedDroneTone.isPlaying = false
+            print("MetroDrone: Stopped drone")
+        }
+
+        // Stop and restart audio engine
+        if audioEngine.isRunning {
+            audioEngine.stop()
+            print("MetroDrone: Stopped audio engine for route change")
+        }
+
+        // Restart on background queue with small delay
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+
+            do {
+                try self.audioEngine.start()
+                print("MetroDrone: Audio engine restarted after route change")
+            } catch {
+                print("MetroDrone: Error restarting audio engine: \(error)")
+                return
+            }
+
+            // Restart components on main thread
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+
+                if metronomeWasPlaying {
+                    print("MetroDrone: Restarting metronome")
+                    self.metronome.start()
+                }
+
+                if droneWasPlaying {
+                    print("MetroDrone: Restarting drone")
+                    self.generatedDroneTone.startDrone()
+                }
+            }
+        }
     }
 
     // MARK: - Centralized Audio Engine Management
@@ -69,6 +170,9 @@ class MetroDrone {
     }
 
     deinit {
+        // Remove notification observer
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
+
         audioQueue.sync {
             if audioEngine.isRunning {
                 audioEngine.stop()

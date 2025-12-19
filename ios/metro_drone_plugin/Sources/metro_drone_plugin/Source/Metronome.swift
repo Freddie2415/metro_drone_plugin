@@ -12,7 +12,7 @@ class Metronome: ObservableObject {
     private static let maxDroneDurationRatio = 0.99
 
     private let audioEngine: AVAudioEngine
-    private let tickPlayerNode: AVAudioPlayerNode
+    let tickPlayerNode: AVAudioPlayerNode
     private let tapPlayerNode: AVAudioPlayerNode
     private var regularTickBuffer: AVAudioPCMBuffer?
     private var tapBuffer: AVAudioPCMBuffer?
