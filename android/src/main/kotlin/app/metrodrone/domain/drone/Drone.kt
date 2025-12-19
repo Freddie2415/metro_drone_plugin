@@ -57,9 +57,9 @@ class Drone(
 
     var onFieldUpdate: ((String, Any) -> Unit)? = null
     var isPlaying: Boolean = false
-        set(value) {
+        private set(value) {
             if (field != value) {
-                field = value;
+                field = value
                 onFieldUpdate?.invoke("isPlaying", value)
             }
         }

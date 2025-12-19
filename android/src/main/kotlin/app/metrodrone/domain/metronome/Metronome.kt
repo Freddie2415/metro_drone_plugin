@@ -86,9 +86,9 @@ class Metronome(
     private val soundPool: SoundPool
     private val tapSoundId: Int
 
-    private var isPlaying: Boolean = false
-        set(value) {
-            if (isPlaying != value) {
+    var isPlaying: Boolean = false
+        private set(value) {
+            if (field != value) {
                 field = value
                 onFieldUpdate?.invoke("isPlaying", value)
             }

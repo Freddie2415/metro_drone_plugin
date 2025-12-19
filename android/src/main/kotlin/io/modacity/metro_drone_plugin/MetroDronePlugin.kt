@@ -38,6 +38,10 @@ class MetroDronePlugin : FlutterPlugin {
     private lateinit var droneToneStreamHandler: DroneToneStreamHandler
     private lateinit var tunerStreamHandler: TunerStreamHandler
 
+    // Keep reference for cleanup
+    private var metrodrone: Metrodrone? = null
+    private var tuner: TunerEngine? = null
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         val context = flutterPluginBinding.applicationContext
         val droneSoundGen = DroneSoundGen()
@@ -49,17 +53,20 @@ class MetroDronePlugin : FlutterPlugin {
         val metronome = Metronome(context, metronomeSoundGen, dronePulseGen, drone, clicker)
         val metronomeSoundPlayer = SoundPlayer()
         val droneSoundPlayer = SoundPlayer()
-        val metrodrone = Metrodrone(metronome, drone, metronomeSoundPlayer, droneSoundPlayer)
-        val tuner = TunerEngine()
+        val metrodroneInstance = Metrodrone(metronome, drone, metronomeSoundPlayer, droneSoundPlayer)
+        metrodroneInstance.initialize(context)
+        metrodrone = metrodroneInstance
+        val tunerInstance = TunerEngine()
+        tuner = tunerInstance
 
         // Initialize handlers
-        metronomeChannelHandler = MetronomeChannelHandler(metrodrone)
-        droneToneChannelHandler = DroneToneChannelHandler(metrodrone)
+        metronomeChannelHandler = MetronomeChannelHandler(metrodroneInstance)
+        droneToneChannelHandler = DroneToneChannelHandler(metrodroneInstance)
         metronomeStreamHandler = MetronomeStreamHandler(metronome)
         metronomeTickStreamHandler = MetronomeTickStreamHandler(metronome)
         droneToneStreamHandler = DroneToneStreamHandler(drone)
-        tunerStreamHandler = TunerStreamHandler(tuner)
-        tunerChannelHandler = TunerChannelHandler(tuner, context)
+        tunerStreamHandler = TunerStreamHandler(tunerInstance)
+        tunerChannelHandler = TunerChannelHandler(tunerInstance, context)
 
         // Connect metronome channel handler with tick stream handler
         metronomeChannelHandler.tickStreamHandler = metronomeTickStreamHandler
@@ -100,6 +107,13 @@ class MetroDronePlugin : FlutterPlugin {
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+        // Release audio resources
+        metrodrone?.release()
+        metrodrone = null
+        tuner?.stop()
+        tuner = null
+
+        // Clear handlers
         metronomeChannel.setMethodCallHandler(null)
         droneToneChannel.setMethodCallHandler(null)
         tunerChannel.setMethodCallHandler(null)
