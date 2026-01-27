@@ -114,7 +114,7 @@ class GeneratedDroneTone2: ObservableObject {
     // MARK: - Phases
     // Separate phases for each sound type
     private var phaseSine:  Double = 0.0
-    private var phaseOrgan: [Double] = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
+    private var phaseOrgan = SIMD4<Double>(0, 0, 0, 0) // for 4 harmonics (SIMD4 to avoid COW race condition)
     private var phaseCello: Double = 0.0
 
     // To smooth volume during start/stop
@@ -331,7 +331,7 @@ class GeneratedDroneTone2: ObservableObject {
             guard !self.isPlaying else { return } // Double-check in case called twice
 
             self.phaseSine = 0.0
-            self.phaseOrgan = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
+            self.phaseOrgan = SIMD4<Double>(0, 0, 0, 0)
             self.phaseCello = 0.0
             // Prepare for smooth fade-in
             // currentAmplitudeScale may be > 0 if just stopped
@@ -363,7 +363,7 @@ class GeneratedDroneTone2: ObservableObject {
             // When currentAmplitudeScale == 0, we can stop the engine
             // and/or reset phases
             self.phaseSine = 0.0
-            self.phaseOrgan = [0.0, 0.0, 0.0, 0.0]
+            self.phaseOrgan = SIMD4<Double>(0, 0, 0, 0)
             self.phaseCello = 0.0
 
             // If you want to stop the engine:
