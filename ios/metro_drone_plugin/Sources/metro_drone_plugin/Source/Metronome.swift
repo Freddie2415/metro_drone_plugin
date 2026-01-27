@@ -613,11 +613,11 @@ class Metronome: ObservableObject {
     // MARK: - scheduleBeats (по аналогии с Apple)
     // ================
     private func scheduleBeats() {
-        // Если не играем — прерываемся
-        guard isPlaying else { return }
-        
+        // Если не играем или engine остановлен — прерываемся (fix MODACITY-NP)
+        guard isPlaying && audioEngine.isRunning else { return }
+
         // Пока не поставили в очередь нужное количество битов (beatsToScheduleAhead)
-        while beatsScheduled < beatsToScheduleAhead {
+        while beatsScheduled < beatsToScheduleAhead && isPlaying && audioEngine.isRunning {
             // Сколько секунд на 1 бит
             let secondsPerBeat = 60.0 / Double(bpm)
             // Переводим секунды в сэмплы
@@ -638,7 +638,10 @@ class Metronome: ObservableObject {
             beatsBufferLock.unlock()
 
             bIndex += 1
-            
+
+            // Проверяем состояние перед планированием (fix MODACITY-NP)
+            guard isPlaying && audioEngine.isRunning else { return }
+
             // Ставим буфер в очередь
             tickPlayerNode.scheduleBuffer(
                 buffer,
@@ -686,8 +689,8 @@ class Metronome: ObservableObject {
                 }
             }
             
-            // Если плеер ещё не запущен, то запускаем
-            if !tickPlayerNode.isPlaying {
+            // Если плеер ещё не запущен, то запускаем (fix MODACITY-NP: проверяем engine)
+            if !tickPlayerNode.isPlaying && audioEngine.isRunning && isPlaying {
                 tickPlayerNode.play()
             }
             
