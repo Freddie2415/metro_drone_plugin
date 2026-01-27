@@ -126,6 +126,31 @@ class MetroDrone {
     }
 
     // MARK: - Centralized Audio Engine Management
+
+    /// Async version - prevents main thread blocking (fixes MODACITY-NG App Hanging)
+    func requestAudioEngine(for component: String, completion: @escaping () -> Void) {
+        audioQueue.async { [weak self] in
+            guard let self = self else {
+                DispatchQueue.main.async { completion() }
+                return
+            }
+
+            let wasEmpty = self.activeComponents.isEmpty
+            self.activeComponents.insert(component)
+
+            if wasEmpty {
+                self.startAudioEngineIfNeeded()
+            }
+
+            print("Audio engine requested by: \(component). Active components: \(self.activeComponents)")
+
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+    }
+
+    /// Sync version - for backward compatibility (use only when not on main thread)
     func requestAudioEngine(for component: String) {
         audioQueue.sync {
             let wasEmpty = activeComponents.isEmpty

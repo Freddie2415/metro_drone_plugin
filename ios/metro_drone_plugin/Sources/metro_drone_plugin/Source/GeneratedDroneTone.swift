@@ -325,18 +325,22 @@ class GeneratedDroneTone2: ObservableObject {
     func startDrone() {
         guard !isPlaying else { return }
 
-        metroDrone?.requestAudioEngine(for: "GeneratedDroneTone")
+        // Use async version to prevent main thread blocking (fixes MODACITY-NG)
+        metroDrone?.requestAudioEngine(for: "GeneratedDroneTone") { [weak self] in
+            guard let self = self else { return }
+            guard !self.isPlaying else { return } // Double-check in case called twice
 
-        phaseSine = 0.0
-        phaseOrgan = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
-        phaseCello = 0.0
-        // Prepare for smooth fade-in
-        // currentAmplitudeScale may be > 0 if just stopped
-        // but we restart from 0.0
-        currentAmplitudeScale = 0.0
+            self.phaseSine = 0.0
+            self.phaseOrgan = [0.0, 0.0, 0.0, 0.0] // for 4 harmonics
+            self.phaseCello = 0.0
+            // Prepare for smooth fade-in
+            // currentAmplitudeScale may be > 0 if just stopped
+            // but we restart from 0.0
+            self.currentAmplitudeScale = 0.0
 
-        isPlaying = true
-        self.sourceNode?.volume = 1.0
+            self.isPlaying = true
+            self.sourceNode?.volume = 1.0
+        }
     }
     
     func stopDrone() {

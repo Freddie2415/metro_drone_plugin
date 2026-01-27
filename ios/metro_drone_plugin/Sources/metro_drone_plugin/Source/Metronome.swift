@@ -485,29 +485,33 @@ class Metronome: ObservableObject {
             return
         }
 
-        metroDrone.requestAudioEngine(for: "Metronome")
-
-        isPlaying = true
-        tickIndex = 0
-        currentTick = 0
-        nextBeatSampleTime = 0
-        beatsScheduled = 0
-
-        // Async buffer preparation to avoid blocking UI
-        bufferPrepQueue.async { [weak self] in
+        // Use async version to prevent main thread blocking (fixes MODACITY-NG)
+        metroDrone.requestAudioEngine(for: "Metronome") { [weak self] in
             guard let self = self else { return }
+            guard !self.isPlaying else { return } // Double-check in case called twice
 
-            if self.beatsBuffer.isEmpty {
-                self.prepareBeatsBuffer()
+            self.isPlaying = true
+            self.tickIndex = 0
+            self.currentTick = 0
+            self.nextBeatSampleTime = 0
+            self.beatsScheduled = 0
+
+            // Async buffer preparation to avoid blocking UI
+            self.bufferPrepQueue.async { [weak self] in
+                guard let self = self else { return }
+
+                if self.beatsBuffer.isEmpty {
+                    self.prepareBeatsBuffer()
+                }
+
+                // Schedule beats after buffers are ready
+                self.bIndex = 0
+                self.syncQueue.async {
+                    self.scheduleBeats()
+                }
+
+                print("Metronome started with BPM: \(self.bpm).")
             }
-
-            // Schedule beats after buffers are ready
-            self.bIndex = 0
-            self.syncQueue.async {
-                self.scheduleBeats()
-            }
-
-            print("Metronome started with BPM: \(self.bpm).")
         }
     }
     
@@ -1036,7 +1040,9 @@ class Metronome: ObservableObject {
         }
 
         if let metroDrone = metroDrone, metroDrone.audioEngine.isRunning == false {
-            metroDrone.requestAudioEngine(for: "Metronome")
+            metroDrone.requestAudioEngine(for: "Metronome") {
+                // Audio engine ready for tap tempo
+            }
         }
 
         // playTapSound() // Removed: tap sound causes ~300ms delay. Using haptic feedback only for instant response.
@@ -1048,8 +1054,9 @@ class Metronome: ObservableObject {
             return
         }
 
-        metroDrone.requestAudioEngine(for: "Metronome")
-        print("✅ Audio engine prewarmed for metronome and tap tempo")
+        metroDrone.requestAudioEngine(for: "Metronome") {
+            print("✅ Audio engine prewarmed for metronome and tap tempo")
+        }
     }
 
     func mixAudioBuffers(buffer1: AVAudioPCMBuffer, buffer2: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
