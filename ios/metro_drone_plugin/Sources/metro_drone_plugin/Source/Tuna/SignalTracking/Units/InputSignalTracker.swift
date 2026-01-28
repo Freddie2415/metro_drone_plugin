@@ -65,8 +65,9 @@ class InputSignalTracker: SignalTracker {
         }
 
         let format = inputNode.outputFormat(forBus: bus)
+        let tapFormat: AVAudioFormat? = (format.sampleRate > 0 && format.channelCount > 0) ? format : nil
 
-        inputNode.installTap(onBus: bus, bufferSize: bufferSize, format: format) { [weak self] buffer, time in
+        inputNode.installTap(onBus: bus, bufferSize: bufferSize, format: tapFormat) { [weak self] buffer, time in
             guard let self = self else { return }
             guard let averageLevel = self.averageLevel else { return }
 
