@@ -6,6 +6,7 @@ final class AudioSessionManager {
     #if os(iOS)
     private let session = AVAudioSession.sharedInstance()
     private var isConfigured = false
+    private let audioQueue = DispatchQueue(label: "com.modacity.audioSession", qos: .userInitiated)
     #endif
 
     private init() {}
@@ -62,25 +63,28 @@ final class AudioSessionManager {
     /// Only changes the mode, not the category - keeps recording active
     func enableTunerMode() {
         #if os(iOS)
-        do {
-            // Only change mode to .measurement - keeps .playAndRecord category
-            // This disables system audio processing for accurate frequencies
-            // Flutter recording continues to work!
-            try session.setCategory(
-                .playAndRecord,
-                mode: .measurement,
-                options: [
-                    .mixWithOthers,
-                    .allowBluetooth,
-                    .allowBluetoothA2DP,
-                    .allowAirPlay,
-                    .defaultToSpeaker
-                ]
-            )
-            try session.setPreferredIOBufferDuration(0.005) // 5ms for low latency
-            print("AudioSessionManager: Switched to .measurement mode for tuner")
-        } catch {
-            print("AudioSessionManager Error (tuner mode): \(error.localizedDescription)")
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            do {
+                // Only change mode to .measurement - keeps .playAndRecord category
+                // This disables system audio processing for accurate frequencies
+                // Flutter recording continues to work!
+                try self.session.setCategory(
+                    .playAndRecord,
+                    mode: .measurement,
+                    options: [
+                        .mixWithOthers,
+                        .allowBluetooth,
+                        .allowBluetoothA2DP,
+                        .allowAirPlay,
+                        .defaultToSpeaker
+                    ]
+                )
+                try self.session.setPreferredIOBufferDuration(0.005) // 5ms for low latency
+                print("AudioSessionManager: Switched to .measurement mode for tuner")
+            } catch {
+                print("AudioSessionManager Error (tuner mode): \(error.localizedDescription)")
+            }
         }
         #endif
     }
@@ -89,24 +93,27 @@ final class AudioSessionManager {
     /// Restores natural sound processing for recording/playback
     func disableTunerMode() {
         #if os(iOS)
-        do {
-            // Return to .default mode - keeps .playAndRecord category
-            // Flutter recording continues to work!
-            try session.setCategory(
-                .playAndRecord,
-                mode: .default,
-                options: [
-                    .mixWithOthers,
-                    .allowBluetooth,
-                    .allowBluetoothA2DP,
-                    .allowAirPlay,
-                    .defaultToSpeaker
-                ]
-            )
-            try session.setPreferredIOBufferDuration(0.01) // 10ms back to normal
-            print("AudioSessionManager: Switched back to .default mode")
-        } catch {
-            print("AudioSessionManager Error (default mode): \(error.localizedDescription)")
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            do {
+                // Return to .default mode - keeps .playAndRecord category
+                // Flutter recording continues to work!
+                try self.session.setCategory(
+                    .playAndRecord,
+                    mode: .default,
+                    options: [
+                        .mixWithOthers,
+                        .allowBluetooth,
+                        .allowBluetoothA2DP,
+                        .allowAirPlay,
+                        .defaultToSpeaker
+                    ]
+                )
+                try self.session.setPreferredIOBufferDuration(0.01) // 10ms back to normal
+                print("AudioSessionManager: Switched back to .default mode")
+            } catch {
+                print("AudioSessionManager Error (default mode): \(error.localizedDescription)")
+            }
         }
         #endif
     }

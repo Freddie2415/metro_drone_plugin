@@ -165,14 +165,15 @@ class MetroDrone {
     }
 
     func releaseAudioEngine(for component: String) {
-        audioQueue.sync {
-            activeComponents.remove(component)
+        audioQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.activeComponents.remove(component)
 
-            if activeComponents.isEmpty {
-                stopAudioEngineIfPossible()
+            if self.activeComponents.isEmpty {
+                self.stopAudioEngineIfPossible()
             }
 
-            print("Audio engine released by: \(component). Active components: \(activeComponents)")
+            print("Audio engine released by: \(component). Active components: \(self.activeComponents)")
         }
     }
 
